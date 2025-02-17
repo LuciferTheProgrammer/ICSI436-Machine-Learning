@@ -14,7 +14,7 @@ def parameters(x , y, sizeInHidden):
     weight2 = (numberArray.random.randn(outputLayerSize, sizeInHidden)) * (numberArray.sqrt(1 / sizeInHidden))
     bias2 = numberArray.zeros((outputLayerSize, 1))
     return weight1, bias1, weight2, bias2
-
+print("Hello Machine Learning")
 
 
 
