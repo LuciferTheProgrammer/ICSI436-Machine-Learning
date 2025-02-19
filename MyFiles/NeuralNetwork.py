@@ -5,6 +5,7 @@ import numpy as numberArray
 def sigmoidFunction(x):
     value = (1 / (1 + numberArray.exp(-x)))
     return value
+
 # Initializing weights and biases for the layers of the neural network.
 def initializeParameters(x , y, sizeInHidden):
     numberArray.random.seed(8)
