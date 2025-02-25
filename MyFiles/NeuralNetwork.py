@@ -41,6 +41,20 @@ def minimizeCostFunction(foward_Prop, trueLabels):
     averageCostValue = -(accumulatedCost / length)
     return averageCostValue
 
+# To find the derivatives for the weights and biases of the layers of the neural
+# network.
+def backwardPropagation(x, y, parametersTuple, forward_Prop):
+    n  = x.shape[1]
+    d_result_2 = forward_Prop["R2Activated"] - y
+    d_weight_2 = numberArray.dot(d_result_2, forward_Prop["R1Activated"].T) * (1/n)
+    d_bias_2 = numberArray.sum(d_result_2, axis = 1, keepdims = True) * (1/n)
+    d_result_1_activated = numberArray.dot(parametersTuple[2].T, d_result_2)
+    d_tanh = 1 - (forward_Prop["R1Activated"])**2
+    d_result_1 = d_result_1_activated * d_tanh
+    d_weight_1 = numberArray.dot(d_result_1, x.T) * (1/n)
+    d_bias_1 = numberArray.sum(d_result_1, axis = 1, keepdims = True) * (1/n)
+    backward_Prop = {"DW1": d_weight_1, "DW2": d_weight_2, "DBias1": d_bias_1,"DBias2": d_bias_2}
+    return backward_Prop
 def main():
     print("Welcome to the Neural Network Project.")
 main()
