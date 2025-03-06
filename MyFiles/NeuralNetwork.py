@@ -1,5 +1,7 @@
 import numpy as number_array
 import sklearn.datasets
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
 from scipy.constants import golden_ratio
 
 
@@ -76,12 +78,12 @@ def gradient_descent(parameters_tuple, backward_prop, learning_rate) :
     updated_bias1 = parameters_tuple[1] - learning_rate * backward_prop["DBias1"]
     updated_weight2 = parameters_tuple[2] - learning_rate * backward_prop["DW2"]
     updated_bias2 = parameters_tuple[3] - learning_rate * backward_prop["DBias2"]
-    updated_weights_biases = {"updated_weight1": updated_weight1, "updated_bias1": updated_bias1, "updated_weight2": updated_weight2, "updated_ bias2": updated_bias2}
+    updated_weights_biases = (updated_weight1, updated_bias1, updated_weight2, updated_bias2)
     return updated_weights_biases
 
 # To train our neural network model, updates accordingly if predicted value is a far estimate from the
 # true/actual label (i.e. learning from the mistakes it makes).
-def training_neural_network(x, y, learning_rate, hidden_size, upper_boundary, num_iterations = 5500) :
+def training_neural_network(x, y, learning_rate, hidden_size, upper_boundary, num_iterations) :
     param = initialize_parameters(x, y, hidden_size)
     cost = []
     for i in range(num_iterations):
@@ -95,8 +97,33 @@ def training_neural_network(x, y, learning_rate, hidden_size, upper_boundary, nu
         param = gradient_descent(param, gradients, learning_rate)
     return cost, param
 
+# Shows how well the neural network does on training with sample data sets based on binary classification.
+# From the initial cost, should keep decreasing as model learns from mistakes - archived on list of cost
+# records. Then finally, an experimental cost to see how well the model does on unseen/new data it hasn't
+# encountered yet. The final computed solution should converge close to if not be the same value as the final
+# cost in the cost record.
 def main():
-    print("Welcome to the Neural Network Project.")
+    data = load_iris()
+    masking = data.target != 2
+    x = data.data[masking]
+    y = data.target[masking]
+    [x_train, x_test, y_train, y_test] = train_test_split(x, y, test_size = 0.2, random_state = 8)
+    x_train = x_train.T
+    x_test = x_test.T
+    y_train = y_train.reshape(1, -1)
+    y_test = y_test.reshape(1, -1)
+    learning_rate = 0.4
+    hidden_layer_size = 4
+    upper_boundary = 0.0001
+    num_iterations = 4500
+    [cost_record, trained_params] = training_neural_network(x_train, y_train, learning_rate, hidden_layer_size, upper_boundary, num_iterations)
+    experimental_forward_outputs = forward_propagation(x_test, trained_params)
+    experimental_cost = cost_function_vector(experimental_forward_outputs, y_test)
+    entry = 0
+    for i in cost_record:
+        entry += 1
+        print(f"Current cost in record {entry}: ", i)
+    print("Experimental cost: ", experimental_cost)
 main()
 
 
