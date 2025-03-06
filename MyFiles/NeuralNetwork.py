@@ -1,4 +1,7 @@
 import numpy as number_array
+import sklearn.datasets
+from scipy.constants import golden_ratio
+
 
 # An activation function and is used in the output layer. This outputs
 # a prediction probability value between 0 and 1.
@@ -65,6 +68,33 @@ def backward_propagation(x, y, parameters_tuple, forward_prop):
     d_bias_1 = number_array.sum(d_result_1, axis = 1, keepdims = True) * (1 / n)
     backward_prop = {"DW1": d_weight_1, "DW2": d_weight_2, "DBias1": d_bias_1,"DBias2": d_bias_2}
     return backward_prop
+
+# To update parameters with the use of gradient descent formula: x(t + 1) = x(t) - learning_rate * f'(x(t))
+# to the neural network.
+def gradient_descent(parameters_tuple, backward_prop, learning_rate) :
+    updated_weight1 = parameters_tuple[0] - learning_rate * backward_prop["DW1"]
+    updated_bias1 = parameters_tuple[1] - learning_rate * backward_prop["DBias1"]
+    updated_weight2 = parameters_tuple[2] - learning_rate * backward_prop["DW2"]
+    updated_bias2 = parameters_tuple[3] - learning_rate * backward_prop["DBias2"]
+    updated_weights_biases = {"updated_weight1": updated_weight1, "updated_bias1": updated_bias1, "updated_weight2": updated_weight2, "updated_ bias2": updated_bias2}
+    return updated_weights_biases
+
+# To train our neural network model, updates accordingly if predicted value is a far estimate from the
+# true/actual label (i.e. learning from the mistakes it makes).
+def training_neural_network(x, y, learning_rate, hidden_size, upper_boundary, num_iterations = 5500) :
+    param = initialize_parameters(x, y, hidden_size)
+    cost = []
+    for i in range(num_iterations):
+        updated_forward_prop = forward_propagation(x, param)
+        current_cost = cost_function_vector(updated_forward_prop, y)
+        cost.append(current_cost)
+        if i > 0 :
+            if(upper_boundary > abs(cost[-1] - cost[-2])) :
+                break
+        gradients = backward_propagation(x, y, param, updated_forward_prop)
+        param = gradient_descent(param, gradients, learning_rate)
+    return cost, param
+
 def main():
     print("Welcome to the Neural Network Project.")
 main()
