@@ -128,7 +128,7 @@ def main():
         upper_boundary = float(input("Enter the upper boundary: "))
         num_iterations = int(input("Enter the number of iterations: "))
 
-        # Suggest parameter test values.
+        # Suggested parameter test values.
         # learning_rate = 0.4
         # hidden_layer_size = 4
         # upper_boundary = 0.0001
