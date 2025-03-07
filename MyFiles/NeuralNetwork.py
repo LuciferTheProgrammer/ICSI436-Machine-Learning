@@ -106,6 +106,7 @@ def output_text(list_collector, experimental_cost) :
             string_holder = "Current cost in record " + str(entry) + ": " + str(i) + "\n"
             output.write(string_holder)
         output.write("Experimental cost: " + str(experimental_cost) + "\n")
+
 # Shows how well the neural network does on training with sample data sets based on binary classification.
 # From the initial cost, should keep decreasing as model learns from mistakes - archived on list of cost
 # records. Then finally, an experimental cost to see how well the model does on unseen/new data it hasn't
