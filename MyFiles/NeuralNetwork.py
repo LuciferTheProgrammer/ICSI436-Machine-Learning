@@ -96,6 +96,8 @@ def training_neural_network(x, y, learning_rate, hidden_size, upper_boundary, nu
         gradients = backward_propagation(x, y, param, updated_forward_prop)
         param = gradient_descent(param, gradients, learning_rate)
     return cost, param
+
+# Method to write and save output of the model to a text file.
 def output_text(list_collector, experimental_cost) :
     entry = 0
     with open("Outputs.txt", "w") as output:
