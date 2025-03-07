@@ -96,34 +96,54 @@ def training_neural_network(x, y, learning_rate, hidden_size, upper_boundary, nu
         gradients = backward_propagation(x, y, param, updated_forward_prop)
         param = gradient_descent(param, gradients, learning_rate)
     return cost, param
-
+def output_text(list_collector, experimental_cost) :
+    entry = 0
+    with open("Outputs.txt", "w") as output:
+        for i in list_collector :
+            entry += 1
+            string_holder = "Current cost in record " + str(entry) + ": " + str(i) + "\n"
+            output.write(string_holder)
+        output.write("Experimental cost: " + str(experimental_cost) + "\n")
 # Shows how well the neural network does on training with sample data sets based on binary classification.
 # From the initial cost, should keep decreasing as model learns from mistakes - archived on list of cost
 # records. Then finally, an experimental cost to see how well the model does on unseen/new data it hasn't
 # encountered yet. The final computed solution should converge close to if not be the same value as the final
 # cost in the cost record.
 def main():
-    data = load_iris()
-    masking = data.target != 2
-    x = data.data[masking]
-    y = data.target[masking]
-    [x_train, x_test, y_train, y_test] = train_test_split(x, y, test_size = 0.2, random_state = 8)
-    x_train = x_train.T
-    x_test = x_test.T
-    y_train = y_train.reshape(1, -1)
-    y_test = y_test.reshape(1, -1)
-    learning_rate = 0.4
-    hidden_layer_size = 4
-    upper_boundary = 0.0001
-    num_iterations = 4500
-    [cost_record, trained_params] = training_neural_network(x_train, y_train, learning_rate, hidden_layer_size, upper_boundary, num_iterations)
-    experimental_forward_outputs = forward_propagation(x_test, trained_params)
-    experimental_cost = cost_function_vector(experimental_forward_outputs, y_test)
-    entry = 0
-    for i in cost_record:
-        entry += 1
-        print(f"Current cost in record {entry}: ", i)
-    print("Experimental cost: ", experimental_cost)
+    while(True) :
+        data = load_iris()
+        masking = data.target != 2
+        x = data.data[masking]
+        y = data.target[masking]
+        [x_train, x_test, y_train, y_test] = train_test_split(x, y, test_size = 0.2, random_state = 8)
+        x_train = x_train.T
+        x_test = x_test.T
+        y_train = y_train.reshape(1, -1)
+        y_test = y_test.reshape(1, -1)
+
+        learning_rate = float(input("Enter the learning rate: "))
+        hidden_layer_size = int(input("Enter the number of neurons in the hidden layer: "))
+        upper_boundary = float(input("Enter the upper boundary: "))
+        num_iterations = int(input("Enter the number of iterations: "))
+
+        # Suggest parameter test values.
+        # learning_rate = 0.4
+        # hidden_layer_size = 4
+        # upper_boundary = 0.0001
+        # num_iterations = 4500
+
+        [cost_record, trained_params] = training_neural_network(x_train, y_train, learning_rate, hidden_layer_size, upper_boundary, num_iterations)
+        experimental_forward_outputs = forward_propagation(x_test, trained_params)
+        experimental_cost = cost_function_vector(experimental_forward_outputs, y_test)
+        entry = 0
+        for i in cost_record:
+            entry += 1
+            print(f"Current cost in record {entry}: ", i)
+        print("Experimental cost: ", experimental_cost)
+        output_text(cost_record, experimental_cost)
+        string_input = input("Do you want to keep testing the model? (y/n): ")
+        if string_input.lower() != "y" :
+            break
 main()
 
 
