@@ -3,6 +3,7 @@ import sklearn.datasets
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from scipy.constants import golden_ratio
+import matplotlib.pyplot as plt
 
 
 # An activation function and is used in the output layer. This outputs
@@ -144,6 +145,7 @@ def main():
             print(f"Current cost in record {entry}: ", i)
         print("Experimental cost: ", experimental_cost)
         output_text(cost_record, experimental_cost)
+        plt.plot(cost_record)
         string_input = input("Do you want to keep testing the model? (y/n): ")
         if string_input.lower() != "y" :
             break
