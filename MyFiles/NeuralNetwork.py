@@ -146,6 +146,7 @@ def main():
         print("Experimental cost: ", experimental_cost)
         output_text(cost_record, experimental_cost)
         plt.plot(cost_record)
+        plt.savefig("cost_record.png")
         plt.show()
         string_input = input("Do you want to keep testing the model? (y/n): ")
         if string_input.lower() != "y" :
