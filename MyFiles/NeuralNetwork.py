@@ -1,3 +1,4 @@
+import numpy as np
 import numpy as number_array
 import sklearn.datasets
 from sklearn.datasets import load_iris
@@ -5,6 +6,21 @@ from sklearn.model_selection import train_test_split
 from scipy.constants import golden_ratio
 import matplotlib.pyplot as plt
 
+
+# An activation function that handles multi-class classifications, outputting a probability
+# distribution where each entry corresponds to a probability for a specific class.
+def softmax(x):
+    maximum = np.max(x, axis = 1, keepdims = True)
+    adjusted = np.subtract(x, maximum)
+    holder = np.exp(adjusted)
+    total = np.sum(holder, axis = 1, keepdims = True)
+    return holder / total
+
+# An activation function that outputs the given input directly if its positive, otherwise it outputs
+# the value 0 instead.
+def reLU(x):
+    value = np.maximum(0, x)
+    return value
 
 # An activation function and is used in the output layer. This outputs
 # a prediction probability value between 0 and 1.
@@ -17,9 +33,9 @@ def initialize_parameters(x, y, size_in_hidden):
     number_array.random.seed(8)
     input_layer_size = x.shape[0]
     output_layer_size = y.shape[0]
-    weight1 = (number_array.random.randn(size_in_hidden, input_layer_size)) * (number_array.sqrt(1 / input_layer_size))
+    weight1 = (number_array.sqrt(1 / input_layer_size)) * (number_array.random.randn(size_in_hidden, input_layer_size))
     bias1 = number_array.zeros((size_in_hidden, 1))
-    weight2 = (number_array.random.randn(output_layer_size, size_in_hidden)) * (number_array.sqrt(1 / size_in_hidden))
+    weight2 = (number_array.sqrt(1 / size_in_hidden)) * (number_array.random.randn(output_layer_size, size_in_hidden))
     bias2 = number_array.zeros((output_layer_size, 1))
     parameters_tuple = (weight1, bias1, weight2, bias2)
     return parameters_tuple
