@@ -1,25 +1,22 @@
-import numpy as np
 import numpy as number_array
-import sklearn.datasets
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
-from scipy.constants import golden_ratio
 import matplotlib.pyplot as plt
 
 
 # An activation function that handles multi-class classifications, outputting a probability
 # distribution where each entry corresponds to a probability for a specific class.
 def softmax(x):
-    maximum = np.max(x, axis = 1, keepdims = True)
-    adjusted = np.subtract(x, maximum)
-    holder = np.exp(adjusted)
-    total = np.sum(holder, axis = 1, keepdims = True)
+    maximum = number_array.max(x, axis = 1, keepdims = True)
+    adjusted = number_array.subtract(x, maximum)
+    holder = number_array.exp(adjusted)
+    total = number_array.sum(holder, axis = 1, keepdims = True)
     return holder / total
 
 # An activation function that outputs the given input directly if its positive, otherwise it outputs
 # the value 0 instead.
-def reLU(x):
-    value = np.maximum(0, x)
+def relu(x):
+    value = number_array.maximum(0, x)
     return value
 
 # An activation function and is used in the output layer. This outputs
@@ -108,7 +105,7 @@ def training_neural_network(x, y, learning_rate, hidden_size, upper_boundary, nu
         current_cost = cost_function_vector(updated_forward_prop, y)
         cost.append(current_cost)
         if i > 0 :
-            if(upper_boundary > abs(cost[-1] - cost[-2])) :
+            if upper_boundary > abs(cost[-1] - cost[-2]):
                 break
         gradients = backward_propagation(x, y, param, updated_forward_prop)
         param = gradient_descent(param, gradients, learning_rate)
@@ -130,7 +127,7 @@ def output_text(list_collector, experimental_cost) :
 # encountered yet. The final computed solution should converge close to if not be the same value as the final
 # cost in the cost record.
 def main():
-    while(True) :
+    while True :
         data = load_iris()
         masking = data.target != 2
         x = data.data[masking]
