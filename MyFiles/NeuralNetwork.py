@@ -164,6 +164,17 @@ def main():
         plt.ylabel("Cost/Size of Error Over Time", color = "green")
         plt.savefig("cost_record.png")
         plt.show()
+        predicted_outputs = experimental_forward_outputs["R2Activated"]
+        plt.figure(figsize = (10,10))
+        plt.xticks(range(y_test.shape[1]))
+        plt.scatter(range(y_test.shape[1]), y_test.flatten(), label = "Actual (0 - Iris setosa: 1 - Iris versicolor)", color = "green", marker = "o")
+        plt.scatter(range(y_test.shape[1]), predicted_outputs.flatten(), label = "Predicted", color = "red", marker = "x")
+        plt.xlabel("Data Test Samples", color = "blue")
+        plt.ylabel("Output Values", color = "blue")
+        plt.title("Actual vs. Predicted Values", color = "blue")
+        plt.legend()
+        plt.savefig("actual vs. predicted values.png")
+        plt.show()
         string_input = input("Do you want to keep testing the model? (y/n): ")
         if string_input.lower() != "y" :
             break
