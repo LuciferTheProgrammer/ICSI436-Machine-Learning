@@ -165,10 +165,11 @@ def main():
         plt.savefig("cost_record.png")
         plt.show()
         predicted_outputs = experimental_forward_outputs["R2Activated"]
+        predicted_binary = (predicted_outputs >= 0.5).astype(int)
         plt.figure(figsize = (10,10))
         plt.xticks(range(y_test.shape[1]))
         plt.scatter(range(y_test.shape[1]), y_test.flatten(), label = "Actual (0 - Iris setosa: 1 - Iris versicolor)", color = "green", marker = "o")
-        plt.scatter(range(y_test.shape[1]), predicted_outputs.flatten(), label = "Predicted", color = "red", marker = "x")
+        plt.scatter(range(y_test.shape[1]), predicted_binary.flatten(), label = "Predicted", color = "red", marker = "x")
         plt.xlabel("Data Test Samples", color = "blue")
         plt.ylabel("Output Values", color = "blue")
         plt.title("Actual vs. Predicted Values", color = "blue")
