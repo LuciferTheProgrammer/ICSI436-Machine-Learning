@@ -87,7 +87,7 @@ def backward_propagation(x, y, parameters_tuple, forward_prop):
 
 # To update parameters with the use of gradient descent formula: x(t + 1) = x(t) - learning_rate * f'(x(t))
 # to the neural network.
-def gradient_descent(parameters_tuple, backward_prop, learning_rate) :
+def gradient_descent(parameters_tuple, backward_prop, learning_rate):
     updated_weight1 = parameters_tuple[0] - learning_rate * backward_prop["DW1"]
     updated_bias1 = parameters_tuple[1] - learning_rate * backward_prop["DBias1"]
     updated_weight2 = parameters_tuple[2] - learning_rate * backward_prop["DW2"]
@@ -97,7 +97,7 @@ def gradient_descent(parameters_tuple, backward_prop, learning_rate) :
 
 # To train our neural network model, updates accordingly if predicted value is a far estimate from the
 # true/actual label (i.e. learning from the mistakes it makes).
-def training_neural_network(x, y, learning_rate, hidden_size, upper_boundary, num_iterations) :
+def training_neural_network(x, y, learning_rate, hidden_size, upper_boundary, num_iterations):
     param = initialize_parameters(x, y, hidden_size)
     cost = []
     for i in range(num_iterations):
@@ -112,7 +112,7 @@ def training_neural_network(x, y, learning_rate, hidden_size, upper_boundary, nu
     return cost, param
 
 # Method to write and save output of the model to a text file.
-def output_text(list_collector, experimental_cost) :
+def output_text(list_collector, experimental_cost):
     entry = 0
     with open("Outputs.txt", "w") as output:
         for i in list_collector :
@@ -122,7 +122,7 @@ def output_text(list_collector, experimental_cost) :
         output.write("Experimental cost: " + str(experimental_cost) + "\n")
 
 # To plot and save the cost curve of the neural network through binary classification.
-def plot_save_cost_curve(cost_record_holder) :
+def plot_save_cost_curve(cost_record_holder):
     plt.plot(cost_record_holder)
     plt.title("Cost for Iris Dataset - Binary Classification", color = "red")
     plt.xlabel("Number of Iterations Before Thresh Hold", color = "blue")
@@ -132,7 +132,7 @@ def plot_save_cost_curve(cost_record_holder) :
 
 # To plot and save the binary classification task of the neural network regarding the implementation
 # of the Iris Dataset.
-def plot_save_binary_classification_iris_dataset(exp_forward_values, y_test_holder) :
+def plot_save_binary_classification_iris_dataset(exp_forward_values, y_test_holder):
     predicted_outputs = exp_forward_values["R2Activated"]
     predicted_binary = (predicted_outputs >= 0.5).astype(int)
     plt.figure(figsize = (10,10))
@@ -191,14 +191,3 @@ def binary_classification():
 def main():
     binary_classification()
 main()
-
-
-
-
-
-
-
-
-
-
-
