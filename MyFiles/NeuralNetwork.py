@@ -121,12 +121,37 @@ def output_text(list_collector, experimental_cost) :
             output.write(string_holder)
         output.write("Experimental cost: " + str(experimental_cost) + "\n")
 
+# To plot and save the cost curve of the neural network through binary classification.
+def plot_save_cost_curve(cost_record_holder) :
+    plt.plot(cost_record_holder)
+    plt.title("Cost for Iris Dataset - Binary Classification", color = "red")
+    plt.xlabel("Number of Iterations Before Thresh Hold", color = "blue")
+    plt.ylabel("Cost/Size of Error Over Time", color = "green")
+    plt.savefig("[Iris Dataset - Binary] Cost.png")
+    plt.show()
+
+# To plot and save the binary classification task of the neural network regarding the implementation
+# of the Iris Dataset.
+def plot_save_binary_classification_iris_dataset(exp_forward_values, y_test_holder) :
+    predicted_outputs = exp_forward_values["R2Activated"]
+    predicted_binary = (predicted_outputs >= 0.5).astype(int)
+    plt.figure(figsize = (10,10))
+    plt.xticks(range(y_test_holder.shape[1]))
+    plt.scatter(range(y_test_holder.shape[1]), y_test_holder.flatten(), label = "= Actual (0 - Iris setosa: 1 - Iris versicolor)", color = "green", marker = "o")
+    plt.scatter(range(y_test_holder.shape[1]), predicted_binary.flatten(), label = "= Predicted", color = "red", marker = "x")
+    plt.xlabel("Data Test Samples", color = "blue")
+    plt.ylabel("Output Values", color = "blue")
+    plt.title("Actual vs. Predicted Values\n Iris Dataset - Binary Classification", color = "blue")
+    plt.legend()
+    plt.savefig("[Iris Dataset - Binary] Actual vs. Predicted values.png")
+    plt.show()
+
 # Shows how well the neural network does on training with sample data sets based on binary classification.
 # From the initial cost, should keep decreasing as model learns from mistakes - archived on list of cost
 # records. Then finally, an experimental cost to see how well the model does on unseen/new data it hasn't
 # encountered yet. The final computed solution should converge close to if not be the same value as the final
 # cost in the cost record.
-def main():
+def binary_classification():
     while True :
         data = load_iris()
         masking = data.target != 2
@@ -158,27 +183,13 @@ def main():
             print(f"Current cost in record {entry}: ", i)
         print("Experimental cost: ", experimental_cost)
         output_text(cost_record, experimental_cost)
-        plt.plot(cost_record)
-        plt.title("Cost", color = "red")
-        plt.xlabel("Number of Iterations Before Thresh Hold", color = "blue")
-        plt.ylabel("Cost/Size of Error Over Time", color = "green")
-        plt.savefig("cost_record.png")
-        plt.show()
-        predicted_outputs = experimental_forward_outputs["R2Activated"]
-        predicted_binary = (predicted_outputs >= 0.5).astype(int)
-        plt.figure(figsize = (10,10))
-        plt.xticks(range(y_test.shape[1]))
-        plt.scatter(range(y_test.shape[1]), y_test.flatten(), label = "Actual (0 - Iris setosa: 1 - Iris versicolor)", color = "green", marker = "o")
-        plt.scatter(range(y_test.shape[1]), predicted_binary.flatten(), label = "Predicted", color = "red", marker = "x")
-        plt.xlabel("Data Test Samples", color = "blue")
-        plt.ylabel("Output Values", color = "blue")
-        plt.title("Actual vs. Predicted Values", color = "blue")
-        plt.legend()
-        plt.savefig("actual vs. predicted values.png")
-        plt.show()
+        plot_save_cost_curve(cost_record)
+        plot_save_binary_classification_iris_dataset(experimental_forward_outputs, y_test)
         string_input = input("Do you want to keep testing the model? (y/n): ")
         if string_input.lower() != "y" :
             break
+def main():
+    binary_classification()
 main()
 
 
