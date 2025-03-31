@@ -225,7 +225,8 @@ def forward_propagation_multi_class(x, parameters_tuple):
 # prediction value and the actual value (multi-class classification).
 def cost_function_vector_multi_class(forward_prop, true_labels):
     n = true_labels.shape[1]
-    log_holder_predictions = number_array.log(forward_prop["R2Activated"])
+    numeric_stability = 1e-8
+    log_holder_predictions = number_array.log(forward_prop["R2Activated"] + numeric_stability)
     cost = log_holder_predictions * true_labels
     total_cost = -(1/n) * number_array.sum(cost)
     return total_cost
@@ -279,7 +280,7 @@ def plot_save_multi_class_classification_iris_dataset(exp_forward_values, y_test
     plt.xlabel("Data Test Samples", color = "blue")
     plt.ylabel("Output Values", color = "blue")
     plt.title("Actual vs. Predicted Values\n Iris Dataset - Multi-class Classification", color = "blue")
-    plt.legend(loc)
+    plt.legend(loc='center left', bbox_to_anchor = (1, 0.5))
     plt.savefig("[Iris Dataset - Multi-class] Actual vs. Predicted values.png")
     plt.show()
 
