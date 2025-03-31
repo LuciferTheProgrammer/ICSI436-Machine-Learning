@@ -137,6 +137,11 @@ def plot_save_cost_curve(cost_record_holder):
 def plot_save_binary_classification_iris_dataset(exp_forward_values, y_test_holder):
     predicted_outputs = exp_forward_values["R2Activated"]
     predicted_binary = (predicted_outputs >= 0.5).astype(int)
+    comparison_holder = predicted_binary == y_test_holder
+    counter = number_array.sum(comparison_holder)
+    sample_size = y_test_holder.size
+    accuracy = float(counter / sample_size)
+    print("Accuracy: ", str(accuracy))
     plt.figure(figsize = (10,10))
     plt.xticks(range(y_test_holder.shape[1]))
     plt.scatter(range(y_test_holder.shape[1]), y_test_holder.flatten(), label = "= Actual (0 - Iris setosa: 1 - Iris versicolor)", color = "green", marker = "o")
@@ -246,8 +251,8 @@ def training_neural_network_multi_class(x, y, learning_rate, hidden_size, upper_
     return cost, param
 
 # One Hot encoding method to convert categorical variables into binary format. This means, it synthesizes
-# columns for each category or class, where 1 indicates that the class is present while the
-# value of 0 signifies that it's not present.
+# rows for each class, where 1 indicates that the class is present while the
+# value of 0 signifies that it's not present. Data samples in this example are the columns.
 def convert_one_hot_encoding(y, number_classes):
     samples = y.shape[1]
     container = number_array.zeros((number_classes, samples))
@@ -271,6 +276,13 @@ def plot_save_multi_class_classification_iris_dataset(exp_forward_values, y_test
     predicted_outputs = exp_forward_values["R2Activated"]
     predicted_class = number_array.argmax(predicted_outputs, axis = 0)
     real_class = number_array.argmax(y_test_holder, axis = 0)
+    counter = 0
+    sample_size = len(real_class)
+    for i in range(sample_size):
+        if predicted_class[i] == real_class[i]:
+            counter += 1
+    accuracy = float(counter / sample_size)
+    print("Accuracy: ", str(accuracy))
     plt.figure(figsize = (10,10))
     plt.xticks(range(y_test_holder.shape[1]))
     plt.scatter(range(y_test_holder.shape[1]), real_class.flatten(), label = "= Actual (0 - Iris setosa: 1 - Iris versicolor: 2 - Iris virginica)", color = "green", marker = "o")
