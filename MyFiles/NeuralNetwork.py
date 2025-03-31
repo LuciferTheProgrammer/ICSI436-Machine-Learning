@@ -278,12 +278,12 @@ def plot_save_multi_class_classification_iris_dataset(exp_forward_values, y_test
     plt.xlabel("Data Test Samples", color = "blue")
     plt.ylabel("Output Values", color = "blue")
     plt.title("Actual vs. Predicted Values\n Iris Dataset - Multi-class Classification", color = "blue")
-    plt.legend(loc='center left', bbox_to_anchor = (1, 0.5))
+    plt.legend(loc='center', bbox_to_anchor = (0.5, .25))
     plt.savefig("[Iris Dataset - Multi-class] Actual vs. Predicted values.png")
     plt.show()
 
 # {Test Multi-class classification using full Iris dataset}.
-# Shows how well the neural network does on training with sample data sets based on binary classification.
+# Shows how well the neural network does on training with sample data sets based on multi-class classification.
 # From the initial cost, should keep decreasing as model learns from mistakes - archived on list of cost
 # records. Then finally, an experimental cost to see how well the model does on unseen/new data it hasn't
 # encountered yet. The final computed solution should converge close to if not be the same value as the final
