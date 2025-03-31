@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 # An activation function that handles multi-class classifications, outputting a probability
 # distribution where each entry corresponds to a probability for a specific class.
 def softmax(x):
-    maximum = number_array.max(x, axis = 1, keepdims = True)
+    maximum = number_array.max(x, axis = 0, keepdims = True)
     adjusted = number_array.subtract(x, maximum)
     holder = number_array.exp(adjusted)
-    total = number_array.sum(holder, axis = 1, keepdims = True)
+    total = number_array.sum(holder, axis = 0, keepdims = True)
     return holder / total
 
 # An activation function that outputs the given input directly if its positive, otherwise it outputs
@@ -154,7 +154,6 @@ def plot_save_binary_classification_iris_dataset(exp_forward_values, y_test_hold
 # encountered yet. The final computed solution should converge close to if not be the same value as the final
 # cost in the cost record.
 def binary_classification():
-    while True :
         data = load_iris()
         masking = data.target != 2
         x = data.data[masking]
@@ -187,9 +186,6 @@ def binary_classification():
         output_text(cost_record, experimental_cost)
         plot_save_cost_curve(cost_record)
         plot_save_binary_classification_iris_dataset(experimental_forward_outputs, y_test)
-        string_input = input("Do you want to keep testing the model? (y/n): ")
-        if string_input.lower() != "y" :
-            break
 
 # To count the number of classes or categories and set it to the output layer size.
 def count_num_classes(y):
@@ -293,7 +289,6 @@ def plot_save_multi_class_classification_iris_dataset(exp_forward_values, y_test
 # encountered yet. The final computed solution should converge close to if not be the same value as the final
 # cost in the cost record.
 def multi_class_classification():
-    while True :
         data = load_iris()
         x = data.data
         y = data.target
@@ -314,8 +309,8 @@ def multi_class_classification():
         # Suggested parameter test values.
         # learning_rate = 0.4
         # hidden_layer_size = 4
-        # upper_boundary = 0.0001
-        # num_iterations = 4500
+        # upper_boundary = 0.000001
+        # num_iterations = 5000
 
         [cost_record, trained_params] = training_neural_network_multi_class(x_train, y_train, learning_rate, hidden_layer_size, upper_boundary, num_iterations, holder)
         experimental_forward_outputs = forward_propagation_multi_class(x_test, trained_params)
@@ -328,14 +323,17 @@ def multi_class_classification():
         output_text(cost_record, experimental_cost)
         plot_save_cost_curve_multi_class(cost_record)
         plot_save_multi_class_classification_iris_dataset(experimental_forward_outputs, y_test)
+
+def main():
+    while True :
+        input_holder = input("For Binary Classification enter b or for Multi-class Classification enter m: ")
+        if input_holder.lower() == "b":
+            print("Binary Classification:")
+            binary_classification()
+        else:
+            print("Multi-class Classification:")
+            multi_class_classification()
         string_input = input("Do you want to keep testing the model? (y/n): ")
         if string_input.lower() != "y" :
             break
-
-def main():
-    input_holder = input("For Binary Classification enter b or for Multi-class Classification enter m: ")
-    if input_holder.lower() == "b":
-        binary_classification()
-    else:
-        multi_class_classification()
 main()
