@@ -336,6 +336,58 @@ def multi_class_classification():
         plot_save_cost_curve_multi_class(cost_record)
         plot_save_multi_class_classification_iris_dataset(experimental_forward_outputs, y_test)
 
+# Start of CNN implementation for Neural Network.
+def initialize_parameters_cnn(image, number_classes):
+    container, depth, diameter, = image
+    filter_container1 = 32
+    filter_container2 = 64
+    hidden_size = 128
+    output_size = number_classes
+    kernel1 = 3
+    kernel2 = 3
+    # convolutional layer 1
+    fan_input1 = pow(kernel1, 2) * container
+    fan_output1 = pow(kernel1, 2) * filter_container1
+    # convolutional layer 2
+    fan_input2 = pow(kernel2, 2) * filter_container1
+    fan_output2 = pow(kernel2, 2) * filter_container2
+    # Dense Layer
+    comb_depth = depth // 4
+    comb_diameter = diameter // 4
+    size_flat = comb_diameter * filter_container2 * comb_depth
+    connect_fan_output = hidden_size
+    connect_fan_input = size_flat
+    # Output Layer
+    output_fan_i = hidden_size
+    output_fan_o = output_size
+    # Weights and Biases Conv 1
+    conv1_shape = (filter_container1, container, kernel1, kernel1)
+    conv1_scaling = number_array.sqrt(2/ (fan_input1 + fan_output1))
+    weight_conv1 = number_array.random.normal(conv1_shape) * conv1_scaling
+    bias_conv1 = number_array.zeros((filter_container1, 1))
+    # Weights and Biases Conv 2
+    conv2_shape = (filter_container2, filter_container1, kernel2, kernel2)
+    conv2_scaling = number_array.sqrt(2/ (fan_input2 + fan_output2))
+    weight_conv2 = number_array.random.normal(conv2_shape) * conv2_scaling
+    bias_conv2 = number_array.zeros((filter_container2, 1))
+    # Dense Layer
+    dense_shape = (hidden_size, size_flat)
+    dense_scaling = number_array.sqrt(2 / (connect_fan_input + connect_fan_output))
+    weight_dense = number_array.random.normal(dense_shape) * dense_scaling
+    bias_dense = number_array.zeros((hidden_size, 1))
+    # Output Layer
+    output_shape = (output_size, hidden_size)
+    output_scaling = number_array.sqrt(2 / (output_fan_i + output_fan_o))
+    weight_output = number_array.random.normal(output_shape) * output_scaling
+    bias_output = number_array.zeros((output_size, 1))
+    parameters_tuple = (weight_conv1, bias_conv1, weight_conv2, bias_conv2, weight_dense,
+                        bias_dense,weight_output, bias_output)
+    return parameters_tuple
+
+
+
+
+
 def main():
     while True :
         input_holder = input("For Binary Classification enter b or for Multi-class Classification enter m: ")
