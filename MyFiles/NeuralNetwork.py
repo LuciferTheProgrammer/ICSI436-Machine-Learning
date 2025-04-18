@@ -362,30 +362,104 @@ def initialize_parameters_cnn(image, number_classes):
     output_fan_o = output_size
     # Weights and Biases Conv 1
     conv1_shape = (filter_container1, container, kernel1, kernel1)
-    conv1_scaling = number_array.sqrt(2/ (fan_input1 + fan_output1))
+    conv1_scaling = number_array.sqrt(2/ fan_input1)
     weight_conv1 = number_array.random.normal(conv1_shape) * conv1_scaling
     bias_conv1 = number_array.zeros((filter_container1, 1))
     # Weights and Biases Conv 2
     conv2_shape = (filter_container2, filter_container1, kernel2, kernel2)
-    conv2_scaling = number_array.sqrt(2/ (fan_input2 + fan_output2))
+    conv2_scaling = number_array.sqrt(2/ fan_input2)
     weight_conv2 = number_array.random.normal(conv2_shape) * conv2_scaling
     bias_conv2 = number_array.zeros((filter_container2, 1))
     # Dense Layer
     dense_shape = (hidden_size, size_flat)
-    dense_scaling = number_array.sqrt(2 / (connect_fan_input + connect_fan_output))
+    dense_scaling = number_array.sqrt(2 / connect_fan_input)
     weight_dense = number_array.random.normal(dense_shape) * dense_scaling
     bias_dense = number_array.zeros((hidden_size, 1))
     # Output Layer
     output_shape = (output_size, hidden_size)
-    output_scaling = number_array.sqrt(2 / (output_fan_i + output_fan_o))
+    output_scaling = number_array.sqrt(2 / output_fan_i)
     weight_output = number_array.random.normal(output_shape) * output_scaling
     bias_output = number_array.zeros((output_size, 1))
     parameters_tuple = (weight_conv1, bias_conv1, weight_conv2, bias_conv2, weight_dense,
                         bias_dense,weight_output, bias_output)
     return parameters_tuple
 
+# inputs (holder1, holder2, holder3, holder4)
+# weights (container1, container2, x, x)
+# biases (bias filter)
+def convert_2D(inputs, weight, biases):
+    batch_num = inputs.shape[0]
+    height = inputs.shape[1]
+    width_input = inputs.shape[2]
+    channel = inputs.shape[3]
+    filter_size = weight.shape[0]
+    kernels = weight.shape[2]
+    output_1 = 1 + height - kernels
+    output_2 = 1 + width_input - kernels
+    size_output = number_array.zeros((batch_num, output_1, output_2, filter_size))
+    flatten_width = weight.reshape(filter_size, channel * pow(kernels, 2))
+    flatten_d_t = flatten_width.T
+    biases_transpose = biases.T
+    for i in range(output_1):
+        for z in range (output_2):
+            holder_2 = inputs[:,  i : i + kernels, z : z + kernels, :]
+            holder_1 = holder_2.reshape(batch_num, channel * pow(kernels, 2))
+            size_output[:, i, z, :] = biases_transpose + holder_1.dot(flatten_d_t)
+    return size_output
+
+def max_pooling(temp):
+    batch_num = temp.shape[0]
+    height = temp.shape[1]
+    width = temp.shape[2]
+    channel = temp.shape[3]
+    output_width = width // 2
+    output_height = height // 2
+    output_size = number_array.zeros((batch_num, output_height, output_width, channel))
+
+    for i in range(output_height):
+        for z in range(output_width):
+            holder_1 = area_size(i)
+            holder_2 = area_size(z)
+            area = temp[:, i * 2: holder_1, z * 2: holder_2, :]
+            output_size[:, i, z, :] = area.max(axis = (1, 2))
+    return output_size
+
+def area_size(x):
+    holder = x * 2 + 2
+    return holder
+
+def flatten_structure(temp):
+    batch_num = temp.shape[0]
+    height = temp.shape[1]
+    width = temp.shape[2]
+    channel = temp.shape[3]
+    holder = channel * height * width
+    result = temp.reshape(batch_num, holder)
+    return result
 
 
+def forward_prop_cnn(x, parameters_tuple):
+    converted_conv1 = convert_2D(x, parameters_tuple[0], parameters_tuple[1])
+    activation_1 = relu(converted_conv1)
+    pooling_1 = max_pooling(activation_1)
+    converted_conv2 = convert_2D(pooling_1, parameters_tuple[2], parameters_tuple[3])
+    activation_2 = relu(converted_conv2)
+    pooling_2 = max_pooling(activation_2)
+    struc_flat = flatten_structure(pooling_2)
+    transpose_dense_weight = parameters_tuple[4].T
+    converted_dense = parameters_tuple[5].T + struc_flat.dot(transpose_dense_weight)
+    activation_3 = relu(converted_dense)
+    transpose_output_weight = parameters_tuple[6].T
+    converted_output = parameters_tuple[7].T + activation_3.dot(transpose_output_weight)
+    activation_4 = softmax(converted_output)
+    return activation_4
+
+def cost_cnn(activation, y):
+    number_size = activation.shape[0]
+    epsilon = 1e-8
+    prob_container = number_array.log(epsilon + activation)
+    cost_holder = number_array.sum(prob_container * y) * -(1/number_size)
+    return cost_holder
 
 
 def main():
