@@ -469,21 +469,20 @@ def cost_cnn(activation, y):
 def back_prop_cnn(forward_prop, parameters_tuple, y):
     number_size = forward_prop["inputs"].shape[0]
     d_holder4 = forward_prop["activation_4"] - y
-
     # Output Layer
     transpose_activation_3 = forward_prop["activation_3"].T
     d_bias_output = number_array.sum(d_holder4) / number_size
     d_weight_output = number_array.dot(transpose_activation_3, d_holder4) / number_size
     d_output_layer = number_array.dot(d_holder4, parameters_tuple[6].T)
-
     # Dense Layer
     d_holder3 = d_relu(forward_prop["converted_dense"], d_output_layer)
     transpose_struct_flat = forward_prop["struc_flat"].T
     d_weight_dense = number_array.dot(transpose_struct_flat, d_holder3) / number_size
     d_bias_dense = number_array.sum(d_holder3) / number_size
     d_dense_layer = number_array.dot(d_holder3, parameters_tuple[4])
-
     d_pooling_2 = number_array.reshape(d_dense_layer, forward_prop["pooling_2"].shape)
+    d_a2 = back_pooling(forward_prop["activation_2"], d_pooling_2)
+
 
 def back_pooling(h_activation_2, d_pooling_2):
     batch_num_h_activation_2 = h_activation_2.shape[0]
@@ -502,35 +501,37 @@ def back_pooling(h_activation_2, d_pooling_2):
     d_a2_final = number_array.reshape(d_a2_mask_result, (batch_num_h_activation_2, height_h_activation_2, width_h_activation_2, channel_h_activation_2))
     return d_a2_final
 
-def back_conv(weight, input_holder, gradient_holder, rate = 1):
+def back_conv(weight, input_holder, gradient_holder):
     filters_weight = weight.shape[0]
     channel_weight = weight.shape[1]
     kernels_weight = weight.shape[2]
-
     batch_num_in = input_holder.shape[0]
     height_in = input_holder.shape[1]
     width_in = input_holder.shape[2]
     channel_in = input_holder.shape[3]
-
     batch_num_gr = gradient_holder.shape[0]
     height_gr = gradient_holder.shape[1]
     width_gr = gradient_holder.shape[2]
     filters_gr = gradient_holder.shape[3]
-
-    patch_holder = sliding_window_view(input_holder, window_shape = (kernels_weight, kernels_weight, channel_weight),
-                                       axis = (1, 2))
-
+    patch_holder = sliding_window_view(input_holder, window_shape = (kernels_weight, kernels_weight), axis = (1, 2))
     container1 = batch_num_gr * height_gr * width_gr
     container2 = channel_weight * pow(kernels_weight, 2)
-    holder_patch1 = number_array.reshape(container1, container2)
+    holder_patch1 = patch_holder.reshape(container1, container2)
     flat_gradient = gradient_holder.reshape(container1, filters_weight)
     transpose_new_gr = flat_gradient.T
     collection_w = number_array.dot(transpose_new_gr, holder_patch1) / batch_num_gr
     collection_w_res = collection_w.reshape(filters_weight, channel_weight, kernels_weight, kernels_weight)
-    sum_holder = number_array.sum(flat_gradient) / batch_num_gr
+    sum_holder = flat_gradient.sum(axis = 0, keepdims = True) / batch_num_gr
     weight_res = weight.reshape(filters_weight, container2)
-    results = number_array.dot(flat_gradient, weight_res)
-
+    result1 = number_array.dot(flat_gradient, weight_res)
+    result2 = result1.reshape(batch_num_gr, height_gr, width_gr, channel_weight, kernels_weight, kernels_weight)
+    volume_gradient = number_array.zeros_like(input_holder)
+    for i in range (kernels_weight):
+        for z in range (kernels_weight):
+            temp = result2[..., i, z]
+            volume_gradient[:, i: i + height_gr, z: z + width_gr, :] += temp
+    final = {"sum_holder": sum_holder,"collection_w_res": collection_w_res, "volume_gradient": volume_gradient}
+    return final
 
 
 
