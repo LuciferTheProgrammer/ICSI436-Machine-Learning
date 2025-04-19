@@ -387,7 +387,7 @@ def initialize_parameters_cnn(image, number_classes):
 # inputs (holder1, holder2, holder3, holder4)
 # weights (container1, container2, x, x)
 # biases (bias filter)
-def convert_2D(inputs, weight, biases):
+def convert_2_d(inputs, weight, biases):
     batch_num = inputs.shape[0]
     height = inputs.shape[1]
     width_input = inputs.shape[2]
@@ -415,7 +415,6 @@ def max_pooling(temp):
     output_width = width // 2
     output_height = height // 2
     output_size = number_array.zeros((batch_num, output_height, output_width, channel))
-
     for i in range(output_height):
         for z in range(output_width):
             holder_1 = area_size(i)
@@ -439,27 +438,95 @@ def flatten_structure(temp):
 
 
 def forward_prop_cnn(x, parameters_tuple):
-    converted_conv1 = convert_2D(x, parameters_tuple[0], parameters_tuple[1])
+    converted_conv1 = convert_2_d(x, parameters_tuple[0], parameters_tuple[1])
     activation_1 = relu(converted_conv1)
     pooling_1 = max_pooling(activation_1)
-    converted_conv2 = convert_2D(pooling_1, parameters_tuple[2], parameters_tuple[3])
+    converted_conv2 = convert_2_d(pooling_1, parameters_tuple[2], parameters_tuple[3])
     activation_2 = relu(converted_conv2)
     pooling_2 = max_pooling(activation_2)
     struc_flat = flatten_structure(pooling_2)
     transpose_dense_weight = parameters_tuple[4].T
-    converted_dense = parameters_tuple[5].T + struc_flat.dot(transpose_dense_weight)
+    converted_dense = parameters_tuple[5].T + number_array.dot(struc_flat, transpose_dense_weight)
     activation_3 = relu(converted_dense)
     transpose_output_weight = parameters_tuple[6].T
-    converted_output = parameters_tuple[7].T + activation_3.dot(transpose_output_weight)
+    converted_output = parameters_tuple[7].T + number_array.dot(activation_3, transpose_output_weight)
     activation_4 = softmax(converted_output)
-    return activation_4
+    forward_prop = {"inputs" : x, "converted_conv1" : converted_conv1, "activation_1": activation_1,
+               "pooling_1": pooling_1, "converted_conv2": converted_conv2, "activation_2": activation_2,
+               "pooling_2": pooling_2, "struc_flat": struc_flat, "converted_dense": converted_dense,
+               "activation_3": activation_3, "converted_output": converted_output, "activation_4": activation_4}
+
+    return
 
 def cost_cnn(activation, y):
     number_size = activation.shape[0]
     epsilon = 1e-8
     prob_container = number_array.log(epsilon + activation)
-    cost_holder = number_array.sum(prob_container * y) * -(1/number_size)
+    cost_holder = (-1 * number_array.sum(prob_container * y)) / number_size
     return cost_holder
+
+def back_prop_cnn(forward_prop, parameters_tuple, y):
+    number_size = forward_prop["inputs"].shape[0]
+    d_holder4 = forward_prop["activation_4"] - y
+
+    # Output Layer
+    transpose_activation_3 = forward_prop["activation_3"].T
+    d_bias_output = number_array.sum(d_holder4) / number_size
+    d_weight_output = number_array.dot(transpose_activation_3, d_holder4) / number_size
+    d_output_layer = number_array.dot(d_holder4, parameters_tuple[6].T)
+
+    # Dense Layer
+    d_holder3 = d_relu(forward_prop["converted_dense"], d_output_layer)
+    transpose_struct_flat = forward_prop["struc_flat"].T
+    d_weight_dense = number_array.dot(transpose_struct_flat, d_holder3) / number_size
+    d_bias_dense = number_array.sum(d_holder3) / number_size
+    d_dense_layer = number_array.dot(d_holder3, parameters_tuple[4])
+
+    d_pooling_2 = number_array.reshape(d_dense_layer, forward_prop["pooling_2"].shape)
+
+def back_pooling(h_activation_2, d_pooling_2):
+    batch_num_h_activation_2 = h_activation_2.shape[0]
+    height_h_activation_2 = h_activation_2.shape[1]
+    width_h_activation_2 = h_activation_2.shape[2]
+    channel_h_activation_2 = h_activation_2.shape[3]
+    batch_num_dp2 = d_pooling_2.shape[0]
+    height_dp2 = d_pooling_2.shape[1]
+    width_dp2 = d_pooling_2.shape[2]
+    channel_dp2 = d_pooling_2.shape[3]
+    scope_a2 = number_array.reshape(h_activation_2, (batch_num_h_activation_2, height_dp2, 2, width_dp2, 2, channel_h_activation_2))
+    maximum_holder = number_array.max(scope_a2, axis = (2, 4), keepdims = True)
+    masking = (scope_a2 == maximum_holder)
+    d_pooling = number_array.reshape(d_pooling_2, (batch_num_dp2, height_dp2, 1, width_dp2, 1, channel_dp2))
+    d_a2_mask_result = d_pooling * masking
+    d_a2_final = number_array.reshape(d_a2_mask_result, (batch_num_h_activation_2, height_h_activation_2, width_h_activation_2, channel_h_activation_2))
+    return d_a2_final
+
+
+# Vectorized operation.
+def d_relu(mat_size, holder):
+    masking = mat_size > 0
+    d_holder = holder * masking
+    return d_holder
+
+# Loop operation.
+def d_relu1(mat_size, holder):
+    batch_number = mat_size.shape[0]
+    height = mat_size.shape[1]
+    width = mat_size.shape[2]
+    channel = mat_size.shape[3]
+    d_holder = number_array.zeros(mat_size)
+
+    for temp1 in range (batch_number):
+        for temp2 in range(height):
+            for temp3 in range(width):
+                for temp4 in range (channel):
+                    if mat_size[temp1, temp2, temp3, temp4] <= 0:
+                        d_holder[temp1, temp2, temp3, temp4] = 0
+                    else:
+                        d_holder[temp1, temp2, temp3, temp4] = holder[temp1, temp2, temp3, temp4]
+    return d_holder
+
+
 
 
 def main():
