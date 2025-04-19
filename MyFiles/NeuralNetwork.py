@@ -5,7 +5,14 @@ from sklearn.datasets import fetch_openml
 import matplotlib.pyplot as plt
 from numpy.lib.stride_tricks import sliding_window_view
 
-
+# An activation function that handles multi-class classifications, outputting a probability
+# distribution where each entry corresponds to a probability for a specific class.
+def softmax_cnn(x):
+    maximum = number_array.max(x, axis = 1, keepdims = True)
+    adjusted = number_array.subtract(x, maximum)
+    holder = number_array.exp(adjusted)
+    total = number_array.sum(holder, axis = 1, keepdims = True)
+    return holder / total
 
 # An activation function that handles multi-class classifications, outputting a probability
 # distribution where each entry corresponds to a probability for a specific class.
@@ -451,13 +458,12 @@ def forward_prop_cnn(x, parameters_tuple):
     activation_3 = relu(converted_dense)
     transpose_output_weight = parameters_tuple[6].T
     converted_output = parameters_tuple[7].T + number_array.dot(activation_3, transpose_output_weight)
-    activation_4 = softmax(converted_output)
+    activation_4 = softmax_cnn(converted_output)
     forward_prop = {"inputs" : x, "converted_conv1" : converted_conv1, "activation_1": activation_1,
                "pooling_1": pooling_1, "converted_conv2": converted_conv2, "activation_2": activation_2,
                "pooling_2": pooling_2, "struc_flat": struc_flat, "converted_dense": converted_dense,
                "activation_3": activation_3, "converted_output": converted_output, "activation_4": activation_4}
-
-    return
+    return forward_prop
 
 def cost_cnn(activation, y):
     number_size = activation.shape[0]
@@ -466,7 +472,7 @@ def cost_cnn(activation, y):
     cost_holder = (-1 * number_array.sum(prob_container * y)) / number_size
     return cost_holder
 
-def back_prop_cnn(forward_prop, parameters_tuple, y):
+def backward_prop_cnn(forward_prop, parameters_tuple, y):
     number_size = forward_prop["inputs"].shape[0]
     d_holder4 = forward_prop["activation_4"] - y
     transpose_activation_3 = forward_prop["activation_3"].T
@@ -481,13 +487,13 @@ def back_prop_cnn(forward_prop, parameters_tuple, y):
     d_pooling_2 = number_array.reshape(d_dense_layer, forward_prop["pooling_2"].shape)
     d_a2 = back_pooling(forward_prop["activation_2"], d_pooling_2)
     d_holder2 = d_relu(forward_prop["converted_conv2"], d_a2)
-    gradient_temp2 = back_conv(parameters_tuple[2], forward_prop["pooling_1"], d_holder2)
+    gradient_temp2 = backward_conv(parameters_tuple[2], forward_prop["pooling_1"], d_holder2)
     d_volume2 = gradient_temp2["volume_gradient"]
     d_bias_conv2 = gradient_temp2["sum_holder"]
     d_weight_conv2 = gradient_temp2["collection_w_res"]
     d_a1 = back_pooling(forward_prop["activation_1"], d_volume2)
     d_holder1 = d_relu(forward_prop["converted_conv1"], d_a1)
-    gradient_temp1 = back_conv(parameters_tuple[0], forward_prop["inputs"], d_holder1)
+    gradient_temp1 = backward_conv(parameters_tuple[0], forward_prop["inputs"], d_holder1)
     d_volume1 = gradient_temp1["volume_gradient"]
     d_bias_conv1 = gradient_temp1["sum_holder"]
     d_weight_conv1 = gradient_temp1["collection_w_res"]
@@ -495,11 +501,6 @@ def back_prop_cnn(forward_prop, parameters_tuple, y):
               "d_weight_conv2": d_weight_conv2, "d_bias_conv2": d_bias_conv2, "d_weight_dense": d_weight_dense,
               "d_bias_dense": d_bias_dense, "d_weight_output": d_weight_output, "d_bias_output": d_bias_output}
     return result
-
-
-
-
-
 
 def back_pooling(h_activation_2, d_pooling_2):
     batch_num_h_activation_2 = h_activation_2.shape[0]
@@ -518,7 +519,7 @@ def back_pooling(h_activation_2, d_pooling_2):
     d_a2_final = number_array.reshape(d_a2_mask_result, (batch_num_h_activation_2, height_h_activation_2, width_h_activation_2, channel_h_activation_2))
     return d_a2_final
 
-def back_conv(weight, input_holder, gradient_holder):
+def backward_conv(weight, input_holder, gradient_holder):
     filters_weight = weight.shape[0]
     channel_weight = weight.shape[1]
     kernels_weight = weight.shape[2]
@@ -550,36 +551,39 @@ def back_conv(weight, input_holder, gradient_holder):
     final = {"sum_holder": sum_holder,"collection_w_res": collection_w_res, "volume_gradient": volume_gradient}
     return final
 
-
-
-
-
 # Vectorized operation.
 def d_relu(mat_size, holder):
     masking = mat_size > 0
     d_holder = holder * masking
     return d_holder
 
-# Loop operation.
-def d_relu1(mat_size, holder):
-    batch_number = mat_size.shape[0]
-    height = mat_size.shape[1]
-    width = mat_size.shape[2]
-    channel = mat_size.shape[3]
-    d_holder = number_array.zeros(mat_size)
+def gradient_update_cnn(params, gradients, learning_rate):
+    u_weight_conv1 = params[0] - learning_rate * gradients["d_weight_conv1"]
+    u_bias_conv1 =   params[1] - learning_rate * gradients["d_bias_conv1"]
+    u_weight_conv2 = params[2] - learning_rate * gradients["d_weight_conv2"]
+    u_bias_conv2 =   params[3] - learning_rate * gradients["d_bias_conv2"]
+    u_weight_dense = params[4] - learning_rate * gradients["d_weight_dense"]
+    u_bias_dense =   params[5] - learning_rate * gradients["d_bias_dense"]
+    u_weight_output = params[6] - learning_rate * gradients["d_weight_output"]
+    u_bias_output =   params[7] - learning_rate * gradients["d_bias_output"]
+    result = (u_weight_conv1, u_bias_conv1, u_weight_conv2, u_bias_conv2, u_weight_dense, u_bias_dense,
+              u_weight_output, u_bias_output)
+    return result
 
-    for temp1 in range (batch_number):
-        for temp2 in range(height):
-            for temp3 in range(width):
-                for temp4 in range (channel):
-                    if mat_size[temp1, temp2, temp3, temp4] <= 0:
-                        d_holder[temp1, temp2, temp3, temp4] = 0
-                    else:
-                        d_holder[temp1, temp2, temp3, temp4] = holder[temp1, temp2, temp3, temp4]
-    return d_holder
-
-
-
+def train_cnn(x, y, parameters, learning_rate, num_iterations, batch_number):
+    length = len(x)
+    for i in range(num_iterations):
+        permutations_holder = number_array.random.permutation(x.shape[0])
+        new_x = x[permutations_holder]
+        new_y = y[permutations_holder]
+        for begin in range(0, length, batch_number):
+            last = min(begin + batch_number, length)
+            batches_x = new_x[begin : last]
+            batches_y = new_y[begin : last]
+            taker = forward_prop_cnn(batches_x, parameters)
+            gradient_holder = backward_prop_cnn(taker, parameters, batches_y)
+            parameters = gradient_update_cnn(parameters, gradient_holder, learning_rate)
+    return parameters
 
 def main():
     while True :
