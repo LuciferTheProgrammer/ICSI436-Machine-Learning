@@ -469,19 +469,36 @@ def cost_cnn(activation, y):
 def back_prop_cnn(forward_prop, parameters_tuple, y):
     number_size = forward_prop["inputs"].shape[0]
     d_holder4 = forward_prop["activation_4"] - y
-    # Output Layer
     transpose_activation_3 = forward_prop["activation_3"].T
-    d_bias_output = number_array.sum(d_holder4) / number_size
+    d_bias_output = number_array.sum(d_holder4, axis = 0, keepdims = True) / number_size
     d_weight_output = number_array.dot(transpose_activation_3, d_holder4) / number_size
     d_output_layer = number_array.dot(d_holder4, parameters_tuple[6].T)
-    # Dense Layer
     d_holder3 = d_relu(forward_prop["converted_dense"], d_output_layer)
     transpose_struct_flat = forward_prop["struc_flat"].T
     d_weight_dense = number_array.dot(transpose_struct_flat, d_holder3) / number_size
-    d_bias_dense = number_array.sum(d_holder3) / number_size
+    d_bias_dense = number_array.sum(d_holder3, axis = 0, keepdims = True) / number_size
     d_dense_layer = number_array.dot(d_holder3, parameters_tuple[4])
     d_pooling_2 = number_array.reshape(d_dense_layer, forward_prop["pooling_2"].shape)
     d_a2 = back_pooling(forward_prop["activation_2"], d_pooling_2)
+    d_holder2 = d_relu(forward_prop["converted_conv2"], d_a2)
+    gradient_temp2 = back_conv(parameters_tuple[2], forward_prop["pooling_1"], d_holder2)
+    d_volume2 = gradient_temp2["volume_gradient"]
+    d_bias_conv2 = gradient_temp2["sum_holder"]
+    d_weight_conv2 = gradient_temp2["collection_w_res"]
+    d_a1 = back_pooling(forward_prop["activation_1"], d_volume2)
+    d_holder1 = d_relu(forward_prop["converted_conv1"], d_a1)
+    gradient_temp1 = back_conv(parameters_tuple[0], forward_prop["inputs"], d_holder1)
+    d_volume1 = gradient_temp1["volume_gradient"]
+    d_bias_conv1 = gradient_temp1["sum_holder"]
+    d_weight_conv1 = gradient_temp1["collection_w_res"]
+    result = {"d_volume1": d_volume1, "d_weight_conv1": d_weight_conv1, "d_bias_conv1": d_bias_conv1,
+              "d_weight_conv2": d_weight_conv2, "d_bias_conv2": d_bias_conv2, "d_weight_dense": d_weight_dense,
+              "d_bias_dense": d_bias_dense, "d_weight_output": d_weight_output, "d_bias_output": d_bias_output}
+    return result
+
+
+
+
 
 
 def back_pooling(h_activation_2, d_pooling_2):
