@@ -3,6 +3,7 @@ from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import fetch_openml
 import matplotlib.pyplot as plt
+from numpy.lib.stride_tricks import sliding_window_view
 
 
 
@@ -500,6 +501,39 @@ def back_pooling(h_activation_2, d_pooling_2):
     d_a2_mask_result = d_pooling * masking
     d_a2_final = number_array.reshape(d_a2_mask_result, (batch_num_h_activation_2, height_h_activation_2, width_h_activation_2, channel_h_activation_2))
     return d_a2_final
+
+def back_conv(weight, input_holder, gradient_holder, rate = 1):
+    filters_weight = weight.shape[0]
+    channel_weight = weight.shape[1]
+    kernels_weight = weight.shape[2]
+
+    batch_num_in = input_holder.shape[0]
+    height_in = input_holder.shape[1]
+    width_in = input_holder.shape[2]
+    channel_in = input_holder.shape[3]
+
+    batch_num_gr = gradient_holder.shape[0]
+    height_gr = gradient_holder.shape[1]
+    width_gr = gradient_holder.shape[2]
+    filters_gr = gradient_holder.shape[3]
+
+    patch_holder = sliding_window_view(input_holder, window_shape = (kernels_weight, kernels_weight, channel_weight),
+                                       axis = (1, 2))
+
+    container1 = batch_num_gr * height_gr * width_gr
+    container2 = channel_weight * pow(kernels_weight, 2)
+    holder_patch1 = number_array.reshape(container1, container2)
+    flat_gradient = gradient_holder.reshape(container1, filters_weight)
+    transpose_new_gr = flat_gradient.T
+    collection_w = number_array.dot(transpose_new_gr, holder_patch1) / batch_num_gr
+    collection_w_res = collection_w.reshape(filters_weight, channel_weight, kernels_weight, kernels_weight)
+    sum_holder = number_array.sum(flat_gradient) / batch_num_gr
+    weight_res = weight.reshape(filters_weight, container2)
+    results = number_array.dot(flat_gradient, weight_res)
+
+
+
+
 
 
 # Vectorized operation.
