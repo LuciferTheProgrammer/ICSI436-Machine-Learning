@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.datasets import fetch_openml
 import matplotlib.pyplot as plt
 from numpy.lib.stride_tricks import sliding_window_view
+L2 = 1e-4
 
 # An activation function that handles multi-class classifications, outputting a probability
 # distribution where each entry corresponds to a probability for a specific class.
@@ -412,16 +413,6 @@ def convert_2_d(inputs, weight, biases):
     container_res = number_array.dot(patch_holder2, flat_struc.T)
     final = number_array.reshape(container_res, (batch_num, output_1, output_2, filter_size))
     final += biases.T
-
-    #size_output = number_array.zeros((batch_num, output_1, output_2, filter_size))
-    #flatten_width = weight.reshape(filter_size, channel * pow(kernels, 2))
-    #flatten_d_t = flatten_width.T
-    #biases_transpose = biases.T
-    #for i in range(output_1):
-    #    for z in range (output_2):
-    #        holder_2 = inputs[:,  i : i + kernels, z : z + kernels, :]
-    #        holder_1 = holder_2.reshape(batch_num, channel * pow(kernels, 2))
-    #        size_output[:, i, z, :] = biases_transpose + holder_1.dot(flatten_d_t)
     return final
 
 def max_pooling(temp):
@@ -429,20 +420,11 @@ def max_pooling(temp):
     height = temp.shape[1]
     width = temp.shape[2]
     channel = temp.shape[3]
-    output_width = width // 2
-    output_height = height // 2
     trim1 = height // 2
     trim2 = width // 2
     temp = temp[:, :trim1 * 2, :trim2 * 2, :]
-    #output_size = number_array.zeros((batch_num, output_height, output_width, channel))
     output_reshaped = number_array.reshape(temp, (batch_num, trim1, 2, trim2, 2, channel))
     output_pooled = number_array.max(output_reshaped, axis = (2, 4))
-    #for i in range(output_height):
-    #    for z in range(output_width):
-    #        holder_1 = area_size(i)
-    #        holder_2 = area_size(z)
-    #        area = temp[:, i * 2: holder_1, z * 2: holder_2, :]
-    #        output_size[:, i, z, :] = area.max(axis = (1, 2))
     return output_pooled
 
 def area_size(x):
@@ -546,24 +528,25 @@ def backward_conv(weight, input_holder, gradient_holder):
     height_gr = gradient_holder.shape[1]
     width_gr = gradient_holder.shape[2]
     filters_gr = gradient_holder.shape[3]
-    patch_holder = sliding_window_view(input_holder, window_shape = (kernels_weight, kernels_weight), axis = (1, 2))
-    container1 = batch_num_gr * height_gr * width_gr
-    container2 = channel_weight * pow(kernels_weight, 2)
-    holder_patch1 = patch_holder.reshape(container1, container2)
-    flat_gradient = gradient_holder.reshape(container1, filters_weight)
-    transpose_new_gr = flat_gradient.T
-    collection_w = number_array.dot(transpose_new_gr, holder_patch1) / batch_num_gr
-    collection_w_res = collection_w.reshape(filters_weight, channel_weight, kernels_weight, kernels_weight)
-    sum_holder = flat_gradient.sum(axis = 0, keepdims = True) / batch_num_gr
-    weight_res = weight.reshape(filters_weight, container2)
-    result1 = number_array.dot(flat_gradient, weight_res)
-    result2 = result1.reshape(batch_num_gr, height_gr, width_gr, channel_weight, kernels_weight, kernels_weight)
+    container_1 = batch_num_in * height_gr * width_gr
+    container_2 = channel_weight * pow(kernels_weight, 2)
+    collector_patch = sliding_window_view(input_holder, window_shape = (kernels_weight, kernels_weight), axis = (1, 2))
+    reformed_patch = number_array.reshape(collector_patch, (container_1, container_2))
+    flat_gradient = number_array.reshape(gradient_holder, (container_1, filters_weight))
+    result1 = number_array.dot(flat_gradient.T, reformed_patch)
+    result1 /= batch_num_in
+    result2 = number_array.reshape(result1, (filters_weight, channel_weight, kernels_weight, kernels_weight))
+    container_sum = number_array.sum(flat_gradient, axis = 0, keepdims = True)
+    container_sum /= batch_num_in
+    reformed_w = number_array.reshape(weight, (filters_weight, container_2))
+    w_result1 = number_array.dot(flat_gradient, reformed_w)
+    w_result2 = number_array.reshape(w_result1, (batch_num_in, height_gr, width_gr, channel_weight, kernels_weight, kernels_weight))
     volume_gradient = number_array.zeros_like(input_holder)
-    for i in range (kernels_weight):
-        for z in range (kernels_weight):
-            temp = result2[..., i, z]
-            volume_gradient[:, i: i + height_gr, z: z + width_gr, :] += temp
-    final = {"sum_holder": sum_holder,"collection_w_res": collection_w_res, "volume_gradient": volume_gradient}
+    for i in range(kernels_weight):
+        for z in range(kernels_weight):
+            new_carrier = w_result2[:, :, :, :, i, z]
+            volume_gradient[:, i: i + height_gr, z: z + width_gr, :] += new_carrier
+    final = {"sum_holder": container_sum,"collection_w_res": result2, "volume_gradient": volume_gradient}
     return final
 
 # Vectorized operation.
@@ -618,6 +601,10 @@ def do_cnn():
         y_holder = convert_one_hot_encoding(y_res, 10)
         y = y_holder.T
         [x_train, x_test, y_train, y_test] = train_test_split(x, y, test_size = 0.4, random_state = 24)
+        x_train_subset = x_train[:2048]
+        y_train_subset = y_train[:2048]
+        x_test_subset = x_test[:1024]
+        y_test_subset = y_test[:1024]
         channel = 1
         depth = 28
         width = 28
@@ -626,17 +613,17 @@ def do_cnn():
         batch_size = int(input("Enter a batch size: "))
         upper_boundary = float(input("Enter an upper boundary: "))
         parameters = initialize_parameters_cnn((channel, depth, width),  10)
-        [cost, trained] = train_cnn(x_train, y_train, parameters, learning_rate, number_iterations, batch_size, upper_boundary)
-        experimental_test = forward_prop_cnn(x_test, trained)
+        [cost, trained] = train_cnn(x_train_subset, y_train_subset, parameters, learning_rate, number_iterations, batch_size, upper_boundary)
+        experimental_test = forward_prop_cnn(x_test_subset, trained)
         container = experimental_test["activation_4"]
-        experimental_cost = cost_cnn(container, y_test)
+        experimental_cost = cost_cnn(container, y_test_subset)
         entry = 0
         for i in cost:
             entry += 1
             print(f"Current cost in record {entry}: ", i)
         print("Experimental cost: ", experimental_cost)
         prediction_holder = number_array.argmax(container, axis = 1)
-        actual = number_array.argmax(y_test, axis = 1)
+        actual = number_array.argmax(y_test_subset, axis = 1)
         accuracy = number_array.mean(prediction_holder == actual)
         print("Accuracy: " + str(accuracy))
 
