@@ -346,7 +346,7 @@ def multi_class_classification():
 
 # Start of CNN implementation for Neural Network.
 def initialize_parameters_cnn(image, number_classes):
-    container, depth, diameter, = image
+    channel, depth, width, = image
     filter_container1 = 32
     filter_container2 = 64
     hidden_size = 128
@@ -354,39 +354,41 @@ def initialize_parameters_cnn(image, number_classes):
     kernel1 = 3
     kernel2 = 3
     # convolutional layer 1
-    fan_input1 = pow(kernel1, 2) * container
+    fan_input1 = pow(kernel1, 2) * channel
     fan_output1 = pow(kernel1, 2) * filter_container1
     # convolutional layer 2
     fan_input2 = pow(kernel2, 2) * filter_container1
     fan_output2 = pow(kernel2, 2) * filter_container2
     # Dense Layer
-    comb_depth = depth // 4
-    comb_diameter = diameter // 4
-    size_flat = comb_diameter * filter_container2 * comb_depth
+    conv1_out = depth - kernel1 + 1
+    pool_1_out = conv1_out // 2
+    conv2_out = pool_1_out - kernel2 + 1
+    pool_2_out = conv2_out // 2
+    size_flat = pool_2_out * filter_container2 * pool_2_out
     connect_fan_output = hidden_size
     connect_fan_input = size_flat
     # Output Layer
     output_fan_i = hidden_size
     output_fan_o = output_size
     # Weights and Biases Conv 1
-    conv1_shape = (filter_container1, container, kernel1, kernel1)
+    conv1_shape = (filter_container1, channel, kernel1, kernel1)
     conv1_scaling = number_array.sqrt(2/ fan_input1)
-    weight_conv1 = number_array.random.normal(conv1_shape) * conv1_scaling
+    weight_conv1 = number_array.random.normal(size=conv1_shape) * conv1_scaling
     bias_conv1 = number_array.zeros((filter_container1, 1))
     # Weights and Biases Conv 2
     conv2_shape = (filter_container2, filter_container1, kernel2, kernel2)
     conv2_scaling = number_array.sqrt(2/ fan_input2)
-    weight_conv2 = number_array.random.normal(conv2_shape) * conv2_scaling
+    weight_conv2 = number_array.random.normal(size=conv2_shape) * conv2_scaling
     bias_conv2 = number_array.zeros((filter_container2, 1))
     # Dense Layer
     dense_shape = (hidden_size, size_flat)
     dense_scaling = number_array.sqrt(2 / connect_fan_input)
-    weight_dense = number_array.random.normal(dense_shape) * dense_scaling
+    weight_dense = number_array.random.normal(size=dense_shape) * dense_scaling
     bias_dense = number_array.zeros((hidden_size, 1))
     # Output Layer
     output_shape = (output_size, hidden_size)
     output_scaling = number_array.sqrt(2 / output_fan_i)
-    weight_output = number_array.random.normal(output_shape) * output_scaling
+    weight_output = number_array.random.normal(size=output_shape) * output_scaling
     bias_output = number_array.zeros((output_size, 1))
     parameters_tuple = (weight_conv1, bias_conv1, weight_conv2, bias_conv2, weight_dense,
                         bias_dense,weight_output, bias_output)
@@ -404,16 +406,23 @@ def convert_2_d(inputs, weight, biases):
     kernels = weight.shape[2]
     output_1 = 1 + height - kernels
     output_2 = 1 + width_input - kernels
-    size_output = number_array.zeros((batch_num, output_1, output_2, filter_size))
-    flatten_width = weight.reshape(filter_size, channel * pow(kernels, 2))
-    flatten_d_t = flatten_width.T
-    biases_transpose = biases.T
-    for i in range(output_1):
-        for z in range (output_2):
-            holder_2 = inputs[:,  i : i + kernels, z : z + kernels, :]
-            holder_1 = holder_2.reshape(batch_num, channel * pow(kernels, 2))
-            size_output[:, i, z, :] = biases_transpose + holder_1.dot(flatten_d_t)
-    return size_output
+    patch_holder1 = sliding_window_view(inputs, window_shape = (kernels, kernels), axis = (1, 2))
+    patch_holder2 = number_array.reshape(patch_holder1, (batch_num * output_1 * output_2, channel * pow(kernels, 2)))
+    flat_struc = number_array.reshape(weight, (filter_size, channel * pow(kernels, 2)))
+    container_res = number_array.dot(patch_holder2, flat_struc.T)
+    final = number_array.reshape(container_res, (batch_num, output_1, output_2, filter_size))
+    final += biases.T
+
+    #size_output = number_array.zeros((batch_num, output_1, output_2, filter_size))
+    #flatten_width = weight.reshape(filter_size, channel * pow(kernels, 2))
+    #flatten_d_t = flatten_width.T
+    #biases_transpose = biases.T
+    #for i in range(output_1):
+    #    for z in range (output_2):
+    #        holder_2 = inputs[:,  i : i + kernels, z : z + kernels, :]
+    #        holder_1 = holder_2.reshape(batch_num, channel * pow(kernels, 2))
+    #        size_output[:, i, z, :] = biases_transpose + holder_1.dot(flatten_d_t)
+    return final
 
 def max_pooling(temp):
     batch_num = temp.shape[0]
@@ -422,14 +431,19 @@ def max_pooling(temp):
     channel = temp.shape[3]
     output_width = width // 2
     output_height = height // 2
-    output_size = number_array.zeros((batch_num, output_height, output_width, channel))
-    for i in range(output_height):
-        for z in range(output_width):
-            holder_1 = area_size(i)
-            holder_2 = area_size(z)
-            area = temp[:, i * 2: holder_1, z * 2: holder_2, :]
-            output_size[:, i, z, :] = area.max(axis = (1, 2))
-    return output_size
+    trim1 = height // 2
+    trim2 = width // 2
+    temp = temp[:, :trim1 * 2, :trim2 * 2, :]
+    #output_size = number_array.zeros((batch_num, output_height, output_width, channel))
+    output_reshaped = number_array.reshape(temp, (batch_num, trim1, 2, trim2, 2, channel))
+    output_pooled = number_array.max(output_reshaped, axis = (2, 4))
+    #for i in range(output_height):
+    #    for z in range(output_width):
+    #        holder_1 = area_size(i)
+    #        holder_2 = area_size(z)
+    #        area = temp[:, i * 2: holder_1, z * 2: holder_2, :]
+    #        output_size[:, i, z, :] = area.max(axis = (1, 2))
+    return output_pooled
 
 def area_size(x):
     holder = x * 2 + 2
@@ -475,27 +489,25 @@ def cost_cnn(activation, y):
 def backward_prop_cnn(forward_prop, parameters_tuple, y):
     number_size = forward_prop["inputs"].shape[0]
     d_holder4 = forward_prop["activation_4"] - y
-    transpose_activation_3 = forward_prop["activation_3"].T
-    d_bias_output = number_array.sum(d_holder4, axis = 0, keepdims = True) / number_size
-    d_weight_output = number_array.dot(transpose_activation_3, d_holder4) / number_size
-    d_output_layer = number_array.dot(d_holder4, parameters_tuple[6].T)
+    d_bias_output = (number_array.sum(d_holder4, axis = 0, keepdims = True) / number_size).T
+    d_weight_output = number_array.dot(d_holder4.T, forward_prop["activation_3"]) / number_size
+    d_output_layer = number_array.dot(d_holder4, parameters_tuple[6])
     d_holder3 = d_relu(forward_prop["converted_dense"], d_output_layer)
-    transpose_struct_flat = forward_prop["struc_flat"].T
-    d_weight_dense = number_array.dot(transpose_struct_flat, d_holder3) / number_size
-    d_bias_dense = number_array.sum(d_holder3, axis = 0, keepdims = True) / number_size
+    d_weight_dense = number_array.dot(d_holder3.T, forward_prop["struc_flat"]) / number_size
+    d_bias_dense = (number_array.sum(d_holder3, axis = 0, keepdims = True) / number_size).T
     d_dense_layer = number_array.dot(d_holder3, parameters_tuple[4])
     d_pooling_2 = number_array.reshape(d_dense_layer, forward_prop["pooling_2"].shape)
     d_a2 = back_pooling(forward_prop["activation_2"], d_pooling_2)
     d_holder2 = d_relu(forward_prop["converted_conv2"], d_a2)
     gradient_temp2 = backward_conv(parameters_tuple[2], forward_prop["pooling_1"], d_holder2)
     d_volume2 = gradient_temp2["volume_gradient"]
-    d_bias_conv2 = gradient_temp2["sum_holder"]
+    d_bias_conv2 = gradient_temp2["sum_holder"].T
     d_weight_conv2 = gradient_temp2["collection_w_res"]
     d_a1 = back_pooling(forward_prop["activation_1"], d_volume2)
     d_holder1 = d_relu(forward_prop["converted_conv1"], d_a1)
     gradient_temp1 = backward_conv(parameters_tuple[0], forward_prop["inputs"], d_holder1)
     d_volume1 = gradient_temp1["volume_gradient"]
-    d_bias_conv1 = gradient_temp1["sum_holder"]
+    d_bias_conv1 = gradient_temp1["sum_holder"].T
     d_weight_conv1 = gradient_temp1["collection_w_res"]
     result = {"d_volume1": d_volume1, "d_weight_conv1": d_weight_conv1, "d_bias_conv1": d_bias_conv1,
               "d_weight_conv2": d_weight_conv2, "d_bias_conv2": d_bias_conv2, "d_weight_dense": d_weight_dense,
@@ -511,13 +523,16 @@ def back_pooling(h_activation_2, d_pooling_2):
     height_dp2 = d_pooling_2.shape[1]
     width_dp2 = d_pooling_2.shape[2]
     channel_dp2 = d_pooling_2.shape[3]
-    scope_a2 = number_array.reshape(h_activation_2, (batch_num_h_activation_2, height_dp2, 2, width_dp2, 2, channel_h_activation_2))
+    crop_height = h_activation_2[:, :height_dp2 * 2, :width_dp2 * 2, :]
+    scope_a2 = crop_height.reshape(batch_num_h_activation_2, height_dp2, 2, width_dp2, 2, channel_h_activation_2)
     maximum_holder = number_array.max(scope_a2, axis = (2, 4), keepdims = True)
     masking = (scope_a2 == maximum_holder)
     d_pooling = number_array.reshape(d_pooling_2, (batch_num_dp2, height_dp2, 1, width_dp2, 1, channel_dp2))
     d_a2_mask_result = d_pooling * masking
-    d_a2_final = number_array.reshape(d_a2_mask_result, (batch_num_h_activation_2, height_h_activation_2, width_h_activation_2, channel_h_activation_2))
-    return d_a2_final
+    cropped_da2 = d_a2_mask_result.reshape(batch_num_h_activation_2, height_dp2 * 2, width_dp2 * 2, channel_h_activation_2)
+    d_final = number_array.zeros_like(h_activation_2)
+    d_final[:, :height_dp2 * 2, :width_dp2 * 2, :] = cropped_da2
+    return d_final
 
 def backward_conv(weight, input_holder, gradient_holder):
     filters_weight = weight.shape[0]
@@ -570,20 +585,61 @@ def gradient_update_cnn(params, gradients, learning_rate):
               u_weight_output, u_bias_output)
     return result
 
-def train_cnn(x, y, parameters, learning_rate, num_iterations, batch_number):
+def train_cnn(x, y, parameters, learning_rate, num_iterations, batch_number, upper_boundary):
     length = len(x)
+    cost = []
     for i in range(num_iterations):
         permutations_holder = number_array.random.permutation(x.shape[0])
         new_x = x[permutations_holder]
         new_y = y[permutations_holder]
+        subset_cost = []
         for begin in range(0, length, batch_number):
             last = min(begin + batch_number, length)
             batches_x = new_x[begin : last]
             batches_y = new_y[begin : last]
             taker = forward_prop_cnn(batches_x, parameters)
+            current_cost = cost_cnn(taker["activation_4"], batches_y)
+            subset_cost.append(current_cost)
             gradient_holder = backward_prop_cnn(taker, parameters, batches_y)
             parameters = gradient_update_cnn(parameters, gradient_holder, learning_rate)
-    return parameters
+        average_cost = sum(subset_cost) / len(subset_cost)
+        cost.append(average_cost)
+        if i > 0 and upper_boundary > abs(cost[-1] - cost[-2]):
+            break
+    return cost, parameters
+
+def do_cnn():
+        data_holder = fetch_openml('mnist_784', as_frame = False, parser = 'liac-arff')
+        x_begin = data_holder.data
+        y_begin = data_holder.target.astype(int)
+        x = x_begin.reshape(-1, 28, 28, 1)
+        x = x.astype(float) / 255.0
+        y_res = y_begin.reshape(1, -1)
+        y_holder = convert_one_hot_encoding(y_res, 10)
+        y = y_holder.T
+        [x_train, x_test, y_train, y_test] = train_test_split(x, y, test_size = 0.4, random_state = 24)
+        channel = 1
+        depth = 28
+        width = 28
+        learning_rate = float(input("Enter a learning rate: "))
+        number_iterations = int(input("Enter the number of iterations: "))
+        batch_size = int(input("Enter a batch size: "))
+        upper_boundary = float(input("Enter an upper boundary: "))
+        parameters = initialize_parameters_cnn((channel, depth, width),  10)
+        [cost, trained] = train_cnn(x_train, y_train, parameters, learning_rate, number_iterations, batch_size, upper_boundary)
+        experimental_test = forward_prop_cnn(x_test, trained)
+        container = experimental_test["activation_4"]
+        experimental_cost = cost_cnn(container, y_test)
+        entry = 0
+        for i in cost:
+            entry += 1
+            print(f"Current cost in record {entry}: ", i)
+        print("Experimental cost: ", experimental_cost)
+        prediction_holder = number_array.argmax(container, axis = 1)
+        actual = number_array.argmax(y_test, axis = 1)
+        accuracy = number_array.mean(prediction_holder == actual)
+        print("Accuracy: " + str(accuracy))
+
 
 def main():
     while True :
@@ -593,7 +649,11 @@ def main():
             binary_classification()
         else:
             print("Multi-class Classification:")
-            multi_class_classification()
+            input_container = input("For CNN enter c or Feed Forward enter f: ")
+            if input_container.lower() == "c":
+                do_cnn()
+            else:
+                multi_class_classification()
         string_input = input("Do you want to keep testing the model? (y/n): ")
         if string_input.lower() != "y" :
             break
