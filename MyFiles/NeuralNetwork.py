@@ -591,42 +591,56 @@ def plot_save_cost_curve_cnn(cost_record_holder):
     plt.savefig("[MNIST - Multi-class] Cost.png")
     plt.show()
 
+def cnn_scatter_plot(predicted, true):
+    true_shape = number_array.arange(true.shape[0])
+    plt.figure(figsize = (10,10))
+    plt.scatter(true_shape, true, label = "= Actual", color = "green", marker = "o", alpha = 0.6)
+    plt.scatter(true_shape, predicted, label = "= Predicted", color = "red", marker = "x", alpha = 0.6)
+    plt.xlabel("Data Test Samples", color = "blue")
+    plt.ylabel("Output Values (0 - 9)", color = "blue")
+    plt.title("Actual vs. Predicted Values\n MNIST - Multi-class Classification", color = "blue")
+    plt.legend()
+    plt.savefig("[MNIST - Multi-class] Actual vs. Predicted values.png")
+    plt.show()
+
 def do_cnn():
-        data_holder = fetch_openml('mnist_784', as_frame = False, parser = 'liac-arff')
-        x_begin = data_holder.data
-        y_begin = data_holder.target.astype(int)
-        x = x_begin.reshape(-1, 28, 28, 1)
-        x = x.astype(float) / 255.0
-        y_res = y_begin.reshape(1, -1)
-        y_holder = convert_one_hot_encoding(y_res, 10)
-        y = y_holder.T
-        [x_train, x_test, y_train, y_test] = train_test_split(x, y, test_size = 0.2, random_state = 24)
-        x_train_subset = x_train[:1024]
-        y_train_subset = y_train[:1024]
-        x_test_subset = x_test[:512]
-        y_test_subset = y_test[:512]
-        channel = 1
-        depth = 28
-        width = 28
-        learning_rate = float(input("Enter a learning rate: "))
-        number_iterations = int(input("Enter the number of iterations: "))
-        batch_size = int(input("Enter a batch size: "))
-        upper_boundary = float(input("Enter an upper boundary: "))
-        parameters = initialize_parameters_cnn((channel, depth, width),  10)
-        [cost, trained] = train_cnn(x_train_subset, y_train_subset, parameters, learning_rate, number_iterations, batch_size, upper_boundary)
-        experimental_test = forward_prop_cnn(x_test_subset, trained)
-        container = experimental_test["activation_4"]
-        experimental_cost = cost_cnn(container, y_test_subset)
-        entry = 0
-        for i in cost:
-            entry += 1
-            print(f"Current cost in record {entry}: ", i)
-        print("Experimental cost: ", experimental_cost)
-        prediction_holder = number_array.argmax(container, axis = 1)
-        actual = number_array.argmax(y_test_subset, axis = 1)
-        accuracy = number_array.mean(prediction_holder == actual)
-        plot_save_cost_curve_cnn(cost)
-        print("Accuracy: " + str(accuracy))
+    data_holder = fetch_openml('mnist_784', as_frame = False, parser = 'liac-arff')
+    x_begin = data_holder.data
+    y_begin = data_holder.target.astype(int)
+    x = x_begin.reshape(-1, 28, 28, 1)
+    x = x.astype(float) / 255.0
+    y_res = y_begin.reshape(1, -1)
+    y_holder = convert_one_hot_encoding(y_res, 10)
+    y = y_holder.T
+    [x_train, x_test, y_train, y_test] = train_test_split(x, y, test_size = 0.2, random_state = 24)
+    x_train_subset = x_train[:1024]
+    y_train_subset = y_train[:1024]
+    x_test_subset = x_test[:512]
+    y_test_subset = y_test[:512]
+    channel = 1
+    depth = 28
+    width = 28
+    learning_rate = float(input("Enter a learning rate: "))
+    number_iterations = int(input("Enter the number of iterations: "))
+    batch_size = int(input("Enter a batch size: "))
+    upper_boundary = float(input("Enter an upper boundary: "))
+    parameters = initialize_parameters_cnn((channel, depth, width),  10)
+    [cost, trained] = train_cnn(x_train_subset, y_train_subset, parameters, learning_rate, number_iterations, batch_size, upper_boundary)
+    experimental_test = forward_prop_cnn(x_test_subset, trained)
+    container = experimental_test["activation_4"]
+    experimental_cost = cost_cnn(container, y_test_subset)
+    entry = 0
+    for i in cost:
+        entry += 1
+        print(f"Current cost in record {entry}: ", i)
+    print("Experimental cost: ", experimental_cost)
+    prediction_holder = number_array.argmax(container, axis = 1)
+    actual = number_array.argmax(y_test_subset, axis = 1)
+    accuracy = number_array.mean(prediction_holder == actual)
+    print("Accuracy: " + str(accuracy))
+    plot_save_cost_curve_cnn(cost)
+    cnn_scatter_plot(prediction_holder, actual)
+
 
 
 def main():
