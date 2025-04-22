@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.datasets import fetch_openml
 import matplotlib.pyplot as plt
 from numpy.lib.stride_tricks import sliding_window_view
+import os
 L2 = 1e-4
 
 # An activation function that handles multi-class classifications, outputting a probability
@@ -603,10 +604,24 @@ def cnn_scatter_plot(predicted, true):
     plt.savefig("[MNIST - Multi-class] Actual vs. Predicted values.png")
     plt.show()
 
+def cached_mnist_784(file_path = "mnist_784.npz"):
+    if os.path.exists(file_path):
+        with number_array.load(file_path) as loaded:
+            x_holder = loaded["X"]
+            y_holder = loaded["y"]
+        print(f"The file path to the dataset {file_path} executed successfully.")
+    else:
+        print("Retrieving the dataset from OpenML")
+        dataset = fetch_openml(name= "mnist_784", version = 1, as_frame = False, parser = 'liac-arff')
+        x_holder = dataset.data
+        y_holder = dataset.target.astype(int)
+        number_array.savez_compressed(file_path, X = x_holder, y = y_holder)
+        print(f"The dataset has been saved to the file path {file_path}.")
+    return x_holder, y_holder
+
 def do_cnn():
-    data_holder = fetch_openml('mnist_784', as_frame = False, parser = 'liac-arff')
-    x_begin = data_holder.data
-    y_begin = data_holder.target.astype(int)
+    #data_holder = fetch_openml('mnist_784', as_frame = False, parser = 'liac-arff')
+    x_begin, y_begin = cached_mnist_784()
     x = x_begin.reshape(-1, 28, 28, 1)
     x = x.astype(float) / 255.0
     y_res = y_begin.reshape(1, -1)
@@ -640,8 +655,6 @@ def do_cnn():
     print("Accuracy: " + str(accuracy))
     plot_save_cost_curve_cnn(cost)
     cnn_scatter_plot(prediction_holder, actual)
-
-
 
 def main():
     while True :
