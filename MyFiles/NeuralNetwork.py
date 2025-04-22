@@ -356,21 +356,17 @@ def initialize_parameters_cnn(image, number_classes):
     kernel2 = 3
     # convolutional layer 1
     fan_input1 = pow(kernel1, 2) * channel
-    fan_output1 = pow(kernel1, 2) * filter_container1
     # convolutional layer 2
     fan_input2 = pow(kernel2, 2) * filter_container1
-    fan_output2 = pow(kernel2, 2) * filter_container2
     # Dense Layer
     conv1_out = depth - kernel1 + 1
     pool_1_out = conv1_out // 2
     conv2_out = pool_1_out - kernel2 + 1
     pool_2_out = conv2_out // 2
     size_flat = pool_2_out * filter_container2 * pool_2_out
-    connect_fan_output = hidden_size
     connect_fan_input = size_flat
     # Output Layer
     output_fan_i = hidden_size
-    output_fan_o = output_size
     # Weights and Biases Conv 1
     conv1_shape = (filter_container1, channel, kernel1, kernel1)
     conv1_scaling = number_array.sqrt(2/ fan_input1)
@@ -498,8 +494,6 @@ def backward_prop_cnn(forward_prop, parameters_tuple, y):
 
 def back_pooling(h_activation_2, d_pooling_2):
     batch_num_h_activation_2 = h_activation_2.shape[0]
-    height_h_activation_2 = h_activation_2.shape[1]
-    width_h_activation_2 = h_activation_2.shape[2]
     channel_h_activation_2 = h_activation_2.shape[3]
     batch_num_dp2 = d_pooling_2.shape[0]
     height_dp2 = d_pooling_2.shape[1]
@@ -521,23 +515,20 @@ def backward_conv(weight, input_holder, gradient_holder):
     channel_weight = weight.shape[1]
     kernels_weight = weight.shape[2]
     batch_num_in = input_holder.shape[0]
-    height_in = input_holder.shape[1]
-    width_in = input_holder.shape[2]
-    channel_in = input_holder.shape[3]
-    batch_num_gr = gradient_holder.shape[0]
     height_gr = gradient_holder.shape[1]
     width_gr = gradient_holder.shape[2]
-    filters_gr = gradient_holder.shape[3]
     container_1 = batch_num_in * height_gr * width_gr
     container_2 = channel_weight * pow(kernels_weight, 2)
     collector_patch = sliding_window_view(input_holder, window_shape = (kernels_weight, kernels_weight), axis = (1, 2))
     reformed_patch = number_array.reshape(collector_patch, (container_1, container_2))
     flat_gradient = number_array.reshape(gradient_holder, (container_1, filters_weight))
-    result1 = number_array.dot(flat_gradient.T, reformed_patch)
-    result1 /= batch_num_in
+    result1 = number_array.dot(flat_gradient.T, reformed_patch) / batch_num_in
     result2 = number_array.reshape(result1, (filters_weight, channel_weight, kernels_weight, kernels_weight))
-    container_sum = number_array.sum(flat_gradient, axis = 0, keepdims = True)
-    container_sum /= batch_num_in
+    container_sum = number_array.sum(flat_gradient, axis = 0, keepdims = True) / batch_num_in
+    #reformed_w = number_array.flip(weight, axis = (2, 3)).transpose(1, 0, 2, 3)
+    #border_control = kernels_weight - 1
+    #border_gradient = number_array.pad(gradient_holder, ((0, 0), (border_control, border_control), (border_control, border_control), (0, 0)), mode = 'constant')
+    #volume_gradient = convert_2_d(border_gradient, reformed_w, number_array.zeros((channel_weight, 1)))
     reformed_w = number_array.reshape(weight, (filters_weight, container_2))
     w_result1 = number_array.dot(flat_gradient, reformed_w)
     w_result2 = number_array.reshape(w_result1, (batch_num_in, height_gr, width_gr, channel_weight, kernels_weight, kernels_weight))
@@ -568,6 +559,7 @@ def gradient_update_cnn(params, gradients, learning_rate):
               u_weight_output, u_bias_output)
     return result
 
+
 def train_cnn(x, y, parameters, learning_rate, num_iterations, batch_number, upper_boundary):
     length = len(x)
     cost = []
@@ -591,6 +583,14 @@ def train_cnn(x, y, parameters, learning_rate, num_iterations, batch_number, upp
             break
     return cost, parameters
 
+def plot_save_cost_curve_cnn(cost_record_holder):
+    plt.plot(cost_record_holder)
+    plt.title("Cost for MNIST - Multi-class Classification", color = "red")
+    plt.xlabel("Number of Iterations Before Thresh Hold", color = "blue")
+    plt.ylabel("Cost/Size of Error Over Time", color = "green")
+    plt.savefig("[MNIST - Multi-class] Cost.png")
+    plt.show()
+
 def do_cnn():
         data_holder = fetch_openml('mnist_784', as_frame = False, parser = 'liac-arff')
         x_begin = data_holder.data
@@ -600,11 +600,11 @@ def do_cnn():
         y_res = y_begin.reshape(1, -1)
         y_holder = convert_one_hot_encoding(y_res, 10)
         y = y_holder.T
-        [x_train, x_test, y_train, y_test] = train_test_split(x, y, test_size = 0.4, random_state = 24)
-        x_train_subset = x_train[:2048]
-        y_train_subset = y_train[:2048]
-        x_test_subset = x_test[:1024]
-        y_test_subset = y_test[:1024]
+        [x_train, x_test, y_train, y_test] = train_test_split(x, y, test_size = 0.2, random_state = 24)
+        x_train_subset = x_train[:1024]
+        y_train_subset = y_train[:1024]
+        x_test_subset = x_test[:512]
+        y_test_subset = y_test[:512]
         channel = 1
         depth = 28
         width = 28
@@ -625,6 +625,7 @@ def do_cnn():
         prediction_holder = number_array.argmax(container, axis = 1)
         actual = number_array.argmax(y_test_subset, axis = 1)
         accuracy = number_array.mean(prediction_holder == actual)
+        plot_save_cost_curve_cnn(cost)
         print("Accuracy: " + str(accuracy))
 
 
