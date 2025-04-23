@@ -356,7 +356,7 @@ def multi_class_classification():
 
 # Start of CNN implementation for Neural Network.
 def initialize_parameters_cnn(image, number_classes):
-    channel, depth, width, = image
+    channel, height, width, = image
     filter_container1 = 32
     filter_container2 = 64
     hidden_size = 128
@@ -368,7 +368,7 @@ def initialize_parameters_cnn(image, number_classes):
     # convolutional layer 2
     fan_input2 = pow(kernel2, 2) * filter_container1
     # Dense Layer
-    conv1_out = depth - kernel1 + 1
+    conv1_out = height - kernel1 + 1
     pool_1_out = conv1_out // 2
     conv2_out = pool_1_out - kernel2 + 1
     pool_2_out = conv2_out // 2
@@ -603,8 +603,13 @@ def plot_save_cost_curve_cnn(cost_record_holder):
 def cnn_scatter_plot(predicted, true):
     prediction_holder = number_array.argmax(predicted["activation_4"], axis = 1)
     actual = number_array.argmax(true, axis = 1)
-    accuracy = number_array.mean(prediction_holder == actual)
-    print("Accuracy: " + str(accuracy))
+    length = len(true)
+    counter = 0
+    for i in range (length):
+        if prediction_holder[i] == actual[i]:
+            counter += 1
+    accuracy = counter / length
+    print("Accuracy: ", str(accuracy))
     true_shape = number_array.arange(actual.shape[0])
     plt.figure(figsize = (10,10))
     plt.scatter(true_shape, actual, label = "= Actual", color = "green", marker = "o", alpha = 0.5)
