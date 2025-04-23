@@ -124,9 +124,15 @@ def training_neural_network(x, y, learning_rate, hidden_size, upper_boundary, nu
     return cost, param
 
 # Method to write and save output of the model to a text file.
-def output_text(list_collector, experimental_cost):
+def output_text(list_collector, experimental_cost, case):
     entry = 0
-    with open("Outputs.txt", "w") as output:
+    if case == 1:
+        output_file = "Output_FF_Binary_Classification.txt"
+    elif case == 2:
+        output_file = "Output_CNN_Multi_Class_Classification.txt"
+    else:
+        output_file = "Output_FF_Multi_Class_Classification.txt"
+    with open(output_file, "w") as output:
         for i in list_collector :
             entry += 1
             string_holder = "Current cost in record " + str(entry) + ": " + str(i) + "\n"
@@ -169,38 +175,39 @@ def plot_save_binary_classification_iris_dataset(exp_forward_values, y_test_hold
 # encountered yet. The final computed solution should converge close to if not be the same value as the final
 # cost in the cost record.
 def binary_classification():
-        data = load_iris()
-        masking = data.target != 2
-        x = data.data[masking]
-        y = data.target[masking]
-        [x_train, x_test, y_train, y_test] = train_test_split(x, y, test_size = 0.2, random_state = 8)
-        x_train = x_train.T
-        x_test = x_test.T
-        y_train = y_train.reshape(1, -1)
-        y_test = y_test.reshape(1, -1)
+    case = 1
+    data = load_iris()
+    masking = data.target != 2
+    x = data.data[masking]
+    y = data.target[masking]
+    [x_train, x_test, y_train, y_test] = train_test_split(x, y, test_size = 0.2, random_state = 8)
+    x_train = x_train.T
+    x_test = x_test.T
+    y_train = y_train.reshape(1, -1)
+    y_test = y_test.reshape(1, -1)
 
-        learning_rate = float(input("Enter the learning rate: "))
-        hidden_layer_size = int(input("Enter the number of neurons in the hidden layer: "))
-        upper_boundary = float(input("Enter the upper boundary: "))
-        num_iterations = int(input("Enter the number of iterations: "))
+    learning_rate = float(input("Enter the learning rate: "))
+    hidden_layer_size = int(input("Enter the number of neurons in the hidden layer: "))
+    upper_boundary = float(input("Enter the upper boundary: "))
+    num_iterations = int(input("Enter the number of iterations: "))
 
-        # Suggested parameter test values.
-        # learning_rate = 0.4
-        # hidden_layer_size = 4
-        # upper_boundary = 0.0001
-        # num_iterations = 4500
+    # Suggested parameter test values.
+    # learning_rate = 0.4
+    # hidden_layer_size = 4
+    # upper_boundary = 0.0001
+    # num_iterations = 4500
 
-        [cost_record, trained_params] = training_neural_network(x_train, y_train, learning_rate, hidden_layer_size, upper_boundary, num_iterations)
-        experimental_forward_outputs = forward_propagation(x_test, trained_params)
-        experimental_cost = cost_function_vector(experimental_forward_outputs, y_test)
-        entry = 0
-        for i in cost_record:
-            entry += 1
-            print(f"Current cost in record {entry}: ", i)
-        print("Experimental cost: ", experimental_cost)
-        output_text(cost_record, experimental_cost)
-        plot_save_cost_curve(cost_record)
-        plot_save_binary_classification_iris_dataset(experimental_forward_outputs, y_test)
+    [cost_record, trained_params] = training_neural_network(x_train, y_train, learning_rate, hidden_layer_size, upper_boundary, num_iterations)
+    experimental_forward_outputs = forward_propagation(x_test, trained_params)
+    experimental_cost = cost_function_vector(experimental_forward_outputs, y_test)
+    entry = 0
+    for i in cost_record:
+        entry += 1
+        print(f"Current cost in record {entry}: ", i)
+    print("Experimental cost: ", experimental_cost)
+    output_text(cost_record, experimental_cost,case)
+    plot_save_cost_curve(cost_record)
+    plot_save_binary_classification_iris_dataset(experimental_forward_outputs, y_test)
 
 # To count the number of classes or categories and set it to the output layer size.
 def count_num_classes(y):
@@ -311,6 +318,7 @@ def plot_save_multi_class_classification_iris_dataset(exp_forward_values, y_test
 # encountered yet. The final computed solution should converge close to if not be the same value as the final
 # cost in the cost record.
 def multi_class_classification():
+        case = 3
         data = load_iris()
         x = data.data
         y = data.target
@@ -342,7 +350,7 @@ def multi_class_classification():
             entry += 1
             print(f"Current cost in record {entry}: ", i)
         print("Experimental cost: ", experimental_cost)
-        output_text(cost_record, experimental_cost)
+        output_text(cost_record, experimental_cost, case)
         plot_save_cost_curve_multi_class(cost_record)
         plot_save_multi_class_classification_iris_dataset(experimental_forward_outputs, y_test)
 
@@ -593,10 +601,14 @@ def plot_save_cost_curve_cnn(cost_record_holder):
     plt.show()
 
 def cnn_scatter_plot(predicted, true):
-    true_shape = number_array.arange(true.shape[0])
+    prediction_holder = number_array.argmax(predicted["activation_4"], axis = 1)
+    actual = number_array.argmax(true, axis = 1)
+    accuracy = number_array.mean(prediction_holder == actual)
+    print("Accuracy: " + str(accuracy))
+    true_shape = number_array.arange(actual.shape[0])
     plt.figure(figsize = (10,10))
-    plt.scatter(true_shape, true, label = "= Actual", color = "green", marker = "o", alpha = 0.6)
-    plt.scatter(true_shape, predicted, label = "= Predicted", color = "red", marker = "x", alpha = 0.6)
+    plt.scatter(true_shape, actual, label = "= Actual", color = "green", marker = "o", alpha = 0.5)
+    plt.scatter(true_shape, prediction_holder, label = "= Predicted", color = "red", marker = "x", alpha = 0.5)
     plt.xlabel("Data Test Samples", color = "blue")
     plt.ylabel("Output Values (0 - 9)", color = "blue")
     plt.title("Actual vs. Predicted Values\n MNIST - Multi-class Classification", color = "blue")
@@ -604,7 +616,7 @@ def cnn_scatter_plot(predicted, true):
     plt.savefig("[MNIST - Multi-class] Actual vs. Predicted values.png")
     plt.show()
 
-def cached_mnist_784(file_path = "mnist_784.npz"):
+def cached_mnist_784(file_path):
     if os.path.exists(file_path):
         with number_array.load(file_path) as loaded:
             x_holder = loaded["X"]
@@ -612,7 +624,7 @@ def cached_mnist_784(file_path = "mnist_784.npz"):
         print(f"The file path to the dataset {file_path} executed successfully.")
     else:
         print("Retrieving the dataset from OpenML")
-        dataset = fetch_openml(name= "mnist_784", version = 1, as_frame = False, parser = 'liac-arff')
+        dataset = fetch_openml(name = "mnist_784", version = 1, as_frame = False, parser = 'liac-arff')
         x_holder = dataset.data
         y_holder = dataset.target.astype(int)
         number_array.savez_compressed(file_path, X = x_holder, y = y_holder)
@@ -620,8 +632,9 @@ def cached_mnist_784(file_path = "mnist_784.npz"):
     return x_holder, y_holder
 
 def do_cnn():
-    #data_holder = fetch_openml('mnist_784', as_frame = False, parser = 'liac-arff')
-    x_begin, y_begin = cached_mnist_784()
+    case = 2
+    file_name = "mnist_784.npz"
+    x_begin, y_begin = cached_mnist_784(file_name)
     x = x_begin.reshape(-1, 28, 28, 1)
     x = x.astype(float) / 255.0
     y_res = y_begin.reshape(1, -1)
@@ -642,19 +655,15 @@ def do_cnn():
     parameters = initialize_parameters_cnn((channel, depth, width),  10)
     [cost, trained] = train_cnn(x_train_subset, y_train_subset, parameters, learning_rate, number_iterations, batch_size, upper_boundary)
     experimental_test = forward_prop_cnn(x_test_subset, trained)
-    container = experimental_test["activation_4"]
-    experimental_cost = cost_cnn(container, y_test_subset)
+    experimental_cost = cost_cnn(experimental_test["activation_4"], y_test_subset)
     entry = 0
     for i in cost:
         entry += 1
         print(f"Current cost in record {entry}: ", i)
     print("Experimental cost: ", experimental_cost)
-    prediction_holder = number_array.argmax(container, axis = 1)
-    actual = number_array.argmax(y_test_subset, axis = 1)
-    accuracy = number_array.mean(prediction_holder == actual)
-    print("Accuracy: " + str(accuracy))
+    output_text(cost, experimental_cost, case)
     plot_save_cost_curve_cnn(cost)
-    cnn_scatter_plot(prediction_holder, actual)
+    cnn_scatter_plot(experimental_test, y_test_subset)
 
 def main():
     while True :
