@@ -59,22 +59,9 @@ def forward_propagation(x, parameters_tuple):
     forward_prop = {"R1" : result1, "R2" : result2, "R1Activated" : result1_activated, "R2Activated" : result2_activated}
     return forward_prop
 
-# Uses loop to measure the size of the error between the neural network's
-# prediction value and the actual value.
-def cost_function_loop(forward_prop, true_labels):
-    accumulated_cost = 0
-    length = len(true_labels)
-    for i in range(length):
-        predicted_value = forward_prop["R2Activated"][i]
-        actual_value = true_labels[i]
-        cost = (actual_value * number_array.log(predicted_value)) + ((1 - actual_value) * number_array.log(1 - predicted_value))
-        accumulated_cost += cost
-    average_cost_value = -(accumulated_cost / length)
-    return average_cost_value
-
 # Uses optimized vector operation to measure the size of the error between the neural network's
 # prediction value and the actual value (binary classification).
-def cost_function_vector(forward_prop, true_labels):
+def loss_function_vector(forward_prop, true_labels):
     n = true_labels.shape[1]
     log_r2_activated = number_array.log(forward_prop["R2Activated"])
     log_r2_complement = number_array.log(1 - forward_prop["R2Activated"])
@@ -114,7 +101,7 @@ def training_neural_network(x, y, learning_rate, hidden_size, upper_boundary, nu
     cost = []
     for i in range(num_iterations):
         updated_forward_prop = forward_propagation(x, param)
-        current_cost = cost_function_vector(updated_forward_prop, y)
+        current_cost = loss_function_vector(updated_forward_prop, y)
         cost.append(current_cost)
         if i > 0 :
             if upper_boundary > abs(cost[-1] - cost[-2]):
@@ -135,17 +122,17 @@ def output_text(list_collector, experimental_cost, case):
     with open(output_file, "w") as output:
         for i in list_collector :
             entry += 1
-            string_holder = "Current cost in record " + str(entry) + ": " + str(i) + "\n"
+            string_holder = "Current loss in record " + str(entry) + ": " + str(i) + "\n"
             output.write(string_holder)
-        output.write("Experimental cost: " + str(experimental_cost) + "\n")
+        output.write("Experimental loss: " + str(experimental_cost) + "\n")
 
 # To plot and save the cost curve of the neural network through binary classification.
-def plot_save_cost_curve(cost_record_holder):
+def plot_save_loss_curve(cost_record_holder):
     plt.plot(cost_record_holder)
-    plt.title("Cost for Iris Dataset - Binary Classification", color = "red")
-    plt.xlabel("Number of Iterations Before Thresh Hold", color = "blue")
-    plt.ylabel("Cost/Size of Error Over Time", color = "green")
-    plt.savefig("[Iris Dataset - Binary] Cost.png")
+    plt.title("Loss Curve for Iris Dataset - Binary Classification", color = "red")
+    plt.xlabel("Number of Iterations", color = "blue")
+    plt.ylabel("Loss Size", color = "green")
+    plt.savefig("[Iris Dataset - Binary] Loss.png")
     plt.show()
 
 # To plot and save the binary classification task of the neural network regarding the implementation
@@ -199,14 +186,14 @@ def binary_classification():
 
     [cost_record, trained_params] = training_neural_network(x_train, y_train, learning_rate, hidden_layer_size, upper_boundary, num_iterations)
     experimental_forward_outputs = forward_propagation(x_test, trained_params)
-    experimental_cost = cost_function_vector(experimental_forward_outputs, y_test)
+    experimental_cost = loss_function_vector(experimental_forward_outputs, y_test)
     entry = 0
     for i in cost_record:
         entry += 1
-        print(f"Current cost in record {entry}: ", i)
-    print("Experimental cost: ", experimental_cost)
+        print(f"Current loss in record {entry}: ", i)
+    print("Experimental loss: ", experimental_cost)
     output_text(cost_record, experimental_cost,case)
-    plot_save_cost_curve(cost_record)
+    plot_save_loss_curve(cost_record)
     plot_save_binary_classification_iris_dataset(experimental_forward_outputs, y_test)
 
 # To count the number of classes or categories and set it to the output layer size.
@@ -243,7 +230,7 @@ def forward_propagation_multi_class(x, parameters_tuple):
 
 # Uses optimized vector operation to measure the size of the error between the neural network's
 # prediction value and the actual value (multi-class classification).
-def cost_function_vector_multi_class(forward_prop, true_labels):
+def loss_function_vector_multi_class(forward_prop, true_labels):
     n = true_labels.shape[1]
     numeric_stability = 1e-8
     log_holder_predictions = number_array.log(forward_prop["R2Activated"] + numeric_stability)
@@ -258,7 +245,7 @@ def training_neural_network_multi_class(x, y, learning_rate, hidden_size, upper_
     cost = []
     for i in range(num_iterations):
         updated_forward_prop = forward_propagation_multi_class(x, param)
-        current_cost = cost_function_vector_multi_class(updated_forward_prop, y)
+        current_cost = loss_function_vector_multi_class(updated_forward_prop, y)
         cost.append(current_cost)
         if i > 0 :
             if upper_boundary > abs(cost[-1] - cost[-2]):
@@ -279,12 +266,12 @@ def convert_one_hot_encoding(y, number_classes):
     return container
 
 # To plot and save the cost curve of the neural network through multi-class classification.
-def plot_save_cost_curve_multi_class(cost_record_holder):
+def plot_save_loss_curve_multi_class(cost_record_holder):
     plt.plot(cost_record_holder)
-    plt.title("Cost for Iris Dataset - Multi-class Classification", color = "red")
-    plt.xlabel("Number of Iterations Before Thresh Hold", color = "blue")
-    plt.ylabel("Cost/Size of Error Over Time", color = "green")
-    plt.savefig("[Iris Dataset - Multi-class] Cost.png")
+    plt.title("Loss Curve for Iris Dataset - Multi-class Classification", color = "red")
+    plt.xlabel("Number of Iterations", color = "blue")
+    plt.ylabel("Loss Size", color = "green")
+    plt.savefig("[Iris Dataset - Multi-class] Loss.png")
     plt.show()
 
 # To plot and save the multi-class classification task of the neural network regarding the implementation
@@ -344,14 +331,14 @@ def multi_class_classification():
 
         [cost_record, trained_params] = training_neural_network_multi_class(x_train, y_train, learning_rate, hidden_layer_size, upper_boundary, num_iterations, holder)
         experimental_forward_outputs = forward_propagation_multi_class(x_test, trained_params)
-        experimental_cost = cost_function_vector_multi_class(experimental_forward_outputs, y_test)
+        experimental_cost = loss_function_vector_multi_class(experimental_forward_outputs, y_test)
         entry = 0
         for i in cost_record:
             entry += 1
-            print(f"Current cost in record {entry}: ", i)
-        print("Experimental cost: ", experimental_cost)
+            print(f"Current loss in record {entry}: ", i)
+        print("Experimental loss: ", experimental_cost)
         output_text(cost_record, experimental_cost, case)
-        plot_save_cost_curve_multi_class(cost_record)
+        plot_save_loss_curve_multi_class(cost_record)
         plot_save_multi_class_classification_iris_dataset(experimental_forward_outputs, y_test)
 
 # Start of CNN implementation for Neural Network.
@@ -466,7 +453,7 @@ def forward_prop_cnn(x, parameters_tuple):
                "activation_3": activation_3, "converted_output": converted_output, "activation_4": activation_4}
     return forward_prop
 
-def cost_cnn(activation, y):
+def loss_cnn(activation, y):
     number_size = activation.shape[0]
     epsilon = 1e-8
     prob_container = number_array.log(epsilon + activation)
@@ -582,7 +569,7 @@ def train_cnn(x, y, parameters, learning_rate, num_iterations, batch_number, upp
             batches_x = new_x[begin : last]
             batches_y = new_y[begin : last]
             taker = forward_prop_cnn(batches_x, parameters)
-            current_cost = cost_cnn(taker["activation_4"], batches_y)
+            current_cost = loss_cnn(taker["activation_4"], batches_y)
             subset_cost.append(current_cost)
             gradient_holder = backward_prop_cnn(taker, parameters, batches_y)
             parameters = gradient_update_cnn(parameters, gradient_holder, learning_rate)
@@ -592,12 +579,12 @@ def train_cnn(x, y, parameters, learning_rate, num_iterations, batch_number, upp
             break
     return cost, parameters
 
-def plot_save_cost_curve_cnn(cost_record_holder):
+def plot_save_loss_curve_cnn(cost_record_holder):
     plt.plot(cost_record_holder)
-    plt.title("Cost for MNIST - Multi-class Classification", color = "red")
-    plt.xlabel("Number of Iterations Before Thresh Hold", color = "blue")
-    plt.ylabel("Cost/Size of Error Over Time", color = "green")
-    plt.savefig("[MNIST - Multi-class] Cost.png")
+    plt.title("Loss Curve for MNIST - Multi-class Classification", color = "red")
+    plt.xlabel("Number of Iterations/Batch", color = "blue")
+    plt.ylabel("Loss Size", color = "green")
+    plt.savefig("[MNIST - Multi-class] Loss.png")
     plt.show()
 
 def cnn_scatter_plot(predicted, true):
@@ -626,17 +613,18 @@ def cached_mnist_784(file_path):
         with number_array.load(file_path) as loaded:
             x_holder = loaded["X"]
             y_holder = loaded["y"]
-        print(f"The file path to the dataset {file_path} executed successfully.")
+        print(f"The local file {file_path} that contains the dataset loaded successfully.")
     else:
-        print("Retrieving the dataset from OpenML")
+        print("Retrieving the mnist_784 dataset from OpenML")
         dataset = fetch_openml(name = "mnist_784", version = 1, as_frame = False, parser = 'liac-arff')
         x_holder = dataset.data
         y_holder = dataset.target.astype(int)
         number_array.savez_compressed(file_path, X = x_holder, y = y_holder)
-        print(f"The dataset has been saved to the file path {file_path}.")
+        print(f"The dataset has been saved locally as {file_path}")
     return x_holder, y_holder
 
 def do_cnn():
+    number_array.random.seed(6)
     case = 2
     file_name = "mnist_784.npz"
     x_begin, y_begin = cached_mnist_784(file_name)
@@ -660,28 +648,31 @@ def do_cnn():
     parameters = initialize_parameters_cnn((channel, depth, width),  10)
     [cost, trained] = train_cnn(x_train_subset, y_train_subset, parameters, learning_rate, number_iterations, batch_size, upper_boundary)
     experimental_test = forward_prop_cnn(x_test_subset, trained)
-    experimental_cost = cost_cnn(experimental_test["activation_4"], y_test_subset)
+    experimental_cost = loss_cnn(experimental_test["activation_4"], y_test_subset)
     entry = 0
     for i in cost:
         entry += 1
-        print(f"Current cost in record {entry}: ", i)
-    print("Experimental cost: ", experimental_cost)
+        print(f"Current loss in record {entry}: ", i)
+    print("Experimental loss: ", experimental_cost)
     output_text(cost, experimental_cost, case)
-    plot_save_cost_curve_cnn(cost)
+    plot_save_loss_curve_cnn(cost)
     cnn_scatter_plot(experimental_test, y_test_subset)
 
 def main():
     while True :
-        input_holder = input("For Binary Classification enter b or for Multi-class Classification enter m: ")
+        input_holder = input("For Binary Classification enter 'b' or for Multi-class Classification enter 'm': ")
         if input_holder.lower() == "b":
             print("Binary Classification:")
+            print("Suggested Parameters: learning_rate = 0.4, hidden_layer_size = 4, upper_boundary = 0.0001, num_iterations = 4500")
             binary_classification()
         else:
             print("Multi-class Classification:")
-            input_container = input("For CNN enter c or Feed Forward enter f: ")
+            input_container = input("For CNN enter 'c' or Feedforward enter 'f': ")
             if input_container.lower() == "c":
+                print("Suggested Parameters: learning_rate = 0.3, number_iterations = 30, batch_size = 64, upper_boundary = 0.000001")
                 do_cnn()
             else:
+                print("Suggested Parameters: learning_rate = 0.4, hidden_layer_size = 4, upper_boundary = 0.000001, num_iterations = 5000")
                 multi_class_classification()
         string_input = input("Do you want to keep testing the model? (y/n): ")
         if string_input.lower() != "y" :
