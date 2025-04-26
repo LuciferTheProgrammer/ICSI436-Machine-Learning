@@ -5,7 +5,6 @@ from sklearn.datasets import fetch_openml
 import matplotlib.pyplot as plt
 from numpy.lib.stride_tricks import sliding_window_view
 import os
-L2 = 1e-4
 
 # An activation function that handles multi-class classifications, outputting a probability
 # distribution where each entry corresponds to a probability for a specific class.
@@ -127,11 +126,19 @@ def output_text(list_collector, experimental_cost, case):
         output.write("Experimental loss: " + str(experimental_cost) + "\n")
 
 # To plot and save the cost curve of the neural network through binary classification.
-def plot_save_loss_curve(cost_record_holder):
+def plot_save_loss_curve(cost_record_holder, learning_rate, hidden_layer, up, n_iterations):
     plt.plot(cost_record_holder)
     plt.title("Loss Curve for Iris Dataset - Binary Classification", color = "red")
     plt.xlabel("Number of Iterations", color = "blue")
     plt.ylabel("Loss Size", color = "green")
+    plt.legend(["Training Loss"], loc = "upper left", bbox_to_anchor = (0.1, 0.95))
+    container = (f"Learning Rate = {learning_rate}\n"
+                 f"Hidden Size = {hidden_layer}\n"
+                 f"Upper Boundary = {up}\n"
+                 f"# of Iterations = {n_iterations}")
+    plt.gca().text(0.95, 0.95, container, transform = plt.gca().transAxes, fontsize = 12, verticalalignment
+    = 'top', horizontalalignment = 'right', bbox = dict(boxstyle = 'square, pad = 0.4', facecolor = 'white',
+                                                        alpha = 0.9))
     plt.savefig("[Iris Dataset - Binary] Loss.png")
     plt.show()
 
@@ -193,7 +200,7 @@ def binary_classification():
         print(f"Current loss in record {entry}: ", i)
     print("Experimental loss: ", experimental_cost)
     output_text(cost_record, experimental_cost,case)
-    plot_save_loss_curve(cost_record)
+    plot_save_loss_curve(cost_record, learning_rate, hidden_layer_size, upper_boundary, num_iterations)
     plot_save_binary_classification_iris_dataset(experimental_forward_outputs, y_test)
 
 # To count the number of classes or categories and set it to the output layer size.
@@ -266,11 +273,19 @@ def convert_one_hot_encoding(y, number_classes):
     return container
 
 # To plot and save the cost curve of the neural network through multi-class classification.
-def plot_save_loss_curve_multi_class(cost_record_holder):
+def plot_save_loss_curve_multi_class(cost_record_holder, learning_rate, hidden_layer, up, n_iterations):
     plt.plot(cost_record_holder)
     plt.title("Loss Curve for Iris Dataset - Multi-class Classification", color = "red")
     plt.xlabel("Number of Iterations", color = "blue")
     plt.ylabel("Loss Size", color = "green")
+    plt.legend(["Training Loss"], loc = "upper left", bbox_to_anchor = (0.1, 0.95))
+    container = (f"Learning Rate = {learning_rate}\n"
+                 f"Hidden Size = {hidden_layer}\n"
+                 f"Upper Boundary = {up}\n"
+                 f"# of Iterations = {n_iterations}")
+    plt.gca().text(0.95, 0.95, container, transform = plt.gca().transAxes, fontsize = 12, verticalalignment
+    = 'top', horizontalalignment = 'right', bbox = dict(boxstyle = 'square, pad = 0.4', facecolor = 'white',
+                                                        alpha = 0.9))
     plt.savefig("[Iris Dataset - Multi-class] Loss.png")
     plt.show()
 
@@ -338,10 +353,14 @@ def multi_class_classification():
             print(f"Current loss in record {entry}: ", i)
         print("Experimental loss: ", experimental_cost)
         output_text(cost_record, experimental_cost, case)
-        plot_save_loss_curve_multi_class(cost_record)
+        plot_save_loss_curve_multi_class(cost_record, learning_rate, hidden_layer_size, upper_boundary, num_iterations)
         plot_save_multi_class_classification_iris_dataset(experimental_forward_outputs, y_test)
 
-# Start of CNN implementation for Neural Network.
+# Initializes the weights and biases of the layers of the Neural Network. The layers include 2
+# convolutional layers, a dense layer, and an output layer. Convolutional layer 1 has 32 neurons,
+# convolutional layer 2 has 64 neurons, dense layer has 128 neurons, and output layer has
+# 10 neurons. Uses He (Kaiming) Initialization for the weights and biases are initialized to 0.
+# Returns the layers' weights and their corresponding biases.
 def initialize_parameters_cnn(image, number_classes):
     channel, height, width, = image
     filter_container1 = 32
@@ -387,9 +406,9 @@ def initialize_parameters_cnn(image, number_classes):
                         bias_dense,weight_output, bias_output)
     return parameters_tuple
 
-# inputs (holder1, holder2, holder3, holder4)
-# weights (container1, container2, x, x)
-# biases (bias filter)
+# This method converts a given 4D input, containing batch size, height, width, and channel,
+# with given filter weights and biases into a convolutional output. This method also returns the finalized
+# feature maps.
 def convert_2_d(inputs, weight, biases):
     batch_num = inputs.shape[0]
     height = inputs.shape[1]
@@ -407,6 +426,8 @@ def convert_2_d(inputs, weight, biases):
     final += biases.T
     return final
 
+# This method performs a 2 by 2-max pooling to an input tensor that contains a shape of (batch size,
+# height, width, and channel), and it also cuts the height and width in half. This returns the pooled tensor.
 def max_pooling(temp):
     batch_num = temp.shape[0]
     height = temp.shape[1]
@@ -419,10 +440,13 @@ def max_pooling(temp):
     output_pooled = number_array.max(output_reshaped, axis = (2, 4))
     return output_pooled
 
+# Compute and return a constant value.
 def area_size(x):
     holder = x * 2 + 2
     return holder
 
+# This method flattens the input tensor with shape (batch size, height, width, channel) into a shaped
+# structure of (batch size, channel * height * width).
 def flatten_structure(temp):
     batch_num = temp.shape[0]
     height = temp.shape[1]
@@ -432,7 +456,13 @@ def flatten_structure(temp):
     result = temp.reshape(batch_num, holder)
     return result
 
-
+# This performs a forward pass for the CNN model. This also performs a series of transformations for
+# two blocks such as (Convolution 3 X 3, Relu (Non-linear activation function), Max Pooling) -> 2 Convoluted Layers.
+# Then this flattens the resulting structure, the Dense Layers go through the Relu, and finally the Output Layer
+# is pushed through the Softmax function to get the predicted output. It returns the following as a dictionary:
+# feature maps and activations (converted_conv1, activation_1, pooling_1, converted_conv2, activation_2, pooling_2),
+# flattened vector (struc_flat), the dense layer's pre-activation and activation result (converted_dense, activation_3),
+# and finally the logits and probabilities generated by the Softmax function (converted_output, activation_4).
 def forward_prop_cnn(x, parameters_tuple):
     converted_conv1 = convert_2_d(x, parameters_tuple[0], parameters_tuple[1])
     activation_1 = relu(converted_conv1)
@@ -453,6 +483,8 @@ def forward_prop_cnn(x, parameters_tuple):
                "activation_3": activation_3, "converted_output": converted_output, "activation_4": activation_4}
     return forward_prop
 
+# To compute the average cross-entropy loss between Softmax outputs (predicted values) and one-hot labels (actual labels).
+# The size of error or distance in between the predicted values and actual labels. This also returns that computed loss value.
 def loss_cnn(activation, y):
     number_size = activation.shape[0]
     epsilon = 1e-8
@@ -460,6 +492,16 @@ def loss_cnn(activation, y):
     cost_holder = (-1 * number_array.sum(prob_container * y)) / number_size
     return cost_holder
 
+# This performs a backwards pass to the CNN model. This also computes all the gradients for the weights and biases of the
+# layers such as Convolutional Layer 1, Convolutional Layer 2, Dense Layer, and the Output Layer. First
+# at the Output Layer the Softmax function is used which is followed by the cross-entropy loss
+# to be able to compute for d_weight_output and d_bias_output. Then, at the Dense Layer, the result
+# from the forward Relu activation is used as a parameter for the derivative of the Relu function to compute
+# for d_weight_dense and d_bias_dense which then reshapes using backwards pooling function.
+# Then at the two Convolutional Layers the forward Relu activation and the pooling results are passed
+# as parameters to the derivative of the Relu function which then propagates to compute for d_weight_conv2, d_bias_conv2,
+# d_weight_conv1, and d_bias_conv1. Finally, this method returns all the gradients for the weights and biases
+# of the layers of the Neural Network as a dictionary.
 def backward_prop_cnn(forward_prop, parameters_tuple, y):
     number_size = forward_prop["inputs"].shape[0]
     d_holder4 = forward_prop["activation_4"] - y
@@ -488,6 +530,8 @@ def backward_prop_cnn(forward_prop, parameters_tuple, y):
               "d_bias_dense": d_bias_dense, "d_weight_output": d_weight_output, "d_bias_output": d_bias_output}
     return result
 
+# This method backpropagates through a 2 X 2 max-pool, which directs collected pooled gradients back to their
+# original locations in the input tensor.
 def back_pooling(h_activation_2, d_pooling_2):
     batch_num_h_activation_2 = h_activation_2.shape[0]
     channel_h_activation_2 = h_activation_2.shape[3]
@@ -506,6 +550,10 @@ def back_pooling(h_activation_2, d_pooling_2):
     d_final[:, :height_dp2 * 2, :width_dp2 * 2, :] = cropped_da2
     return d_final
 
+# This method backpropagates through the Convolutional Layer. This first computes the weight gradients by
+# multiplying the gradient with the corresponding input patches. Then computes for the bias gradients
+# by summing up the gradient values, and finally computes for gradient of the input volume. This also returns
+# the computed weight gradients, bias gradients, and gradient for the input volume.
 def backward_conv(weight, input_holder, gradient_holder):
     filters_weight = weight.shape[0]
     channel_weight = weight.shape[1]
@@ -521,10 +569,6 @@ def backward_conv(weight, input_holder, gradient_holder):
     result1 = number_array.dot(flat_gradient.T, reformed_patch) / batch_num_in
     result2 = number_array.reshape(result1, (filters_weight, channel_weight, kernels_weight, kernels_weight))
     container_sum = number_array.sum(flat_gradient, axis = 0, keepdims = True) / batch_num_in
-    #reformed_w = number_array.flip(weight, axis = (2, 3)).transpose(1, 0, 2, 3)
-    #border_control = kernels_weight - 1
-    #border_gradient = number_array.pad(gradient_holder, ((0, 0), (border_control, border_control), (border_control, border_control), (0, 0)), mode = 'constant')
-    #volume_gradient = convert_2_d(border_gradient, reformed_w, number_array.zeros((channel_weight, 1)))
     reformed_w = number_array.reshape(weight, (filters_weight, container_2))
     w_result1 = number_array.dot(flat_gradient, reformed_w)
     w_result2 = number_array.reshape(w_result1, (batch_num_in, height_gr, width_gr, channel_weight, kernels_weight, kernels_weight))
@@ -536,12 +580,16 @@ def backward_conv(weight, input_holder, gradient_holder):
     final = {"sum_holder": container_sum,"collection_w_res": result2, "volume_gradient": volume_gradient}
     return final
 
-# Vectorized operation.
+# Vectorized operation, this method backpropagates through the Relu, and it zeros out the gradients
+# where the given input is non-positive i.e (x <= 0).
 def d_relu(mat_size, holder):
     masking = mat_size > 0
     d_holder = holder * masking
     return d_holder
 
+# This method is using the gradient descent formula to update the parameters for every mistake:
+# Updates the weights and biases for all layers of the Neural Network -> [W_(x + 1) = W_x - learning_rate * gradient].
+# This method returns the updated weights and biases for the 2 Convolutional Layers, Dense Layer, and Output Layer.
 def gradient_update_cnn(params, gradients, learning_rate):
     u_weight_conv1 = params[0] - learning_rate * gradients["d_weight_conv1"]
     u_bias_conv1 =   params[1] - learning_rate * gradients["d_bias_conv1"]
@@ -556,6 +604,9 @@ def gradient_update_cnn(params, gradients, learning_rate):
     return result
 
 
+# This method trains the Neural Network using a mini batch SGD (Stochastic Gradient Descent), this randomly shuffles data for each iteration,
+# and also undergoes a forward pass, backward pass, parameter updates, and keeps an archive of the average loss per batch iteration.
+# This method returns the newly trained parameters and the record of losses during training.
 def train_cnn(x, y, parameters, learning_rate, num_iterations, batch_number, upper_boundary):
     length = len(x)
     cost = []
@@ -579,14 +630,26 @@ def train_cnn(x, y, parameters, learning_rate, num_iterations, batch_number, upp
             break
     return cost, parameters
 
-def plot_save_loss_curve_cnn(cost_record_holder):
+# This method plots the loss curve with respect to the number of iterations of training that the
+# Neural Network underwent.
+def plot_save_loss_curve_cnn(cost_record_holder, learning_rate, n_iter, batch_size, up):
     plt.plot(cost_record_holder)
     plt.title("Loss Curve for MNIST - Multi-class Classification", color = "red")
     plt.xlabel("Number of Iterations/Batch", color = "blue")
     plt.ylabel("Loss Size", color = "green")
+    plt.legend(["Training Loss"], loc = "upper left", bbox_to_anchor = (0.1, 0.95))
+    container = (f"Learning Rate = {learning_rate}\n"
+                 f"# of Iterations = {n_iter}\n"
+                 f"Batch Size = {batch_size}\n"
+                 f"Upper Boundary = {up}")
+    plt.gca().text(0.95, 0.95, container, transform = plt.gca().transAxes, fontsize = 12, verticalalignment
+                   = 'top', horizontalalignment = 'right', bbox = dict(boxstyle = 'square, pad = 0.4', facecolor = 'white',
+                    alpha = 0.9))
     plt.savefig("[MNIST - Multi-class] Loss.png")
     plt.show()
 
+# This method creates a scatter plot of all the given test samples along with the classification results
+# from the Neural Network (its predicted results) vs. the corresponding actual labels for the associated sample space.
 def cnn_scatter_plot(predicted, true):
     prediction_holder = number_array.argmax(predicted["activation_4"], axis = 1)
     actual = number_array.argmax(true, axis = 1)
@@ -599,8 +662,8 @@ def cnn_scatter_plot(predicted, true):
     print("Accuracy: ", str(accuracy))
     true_shape = number_array.arange(actual.shape[0])
     plt.figure(figsize = (10,10))
-    plt.scatter(true_shape, actual, label = "= Actual", color = "green", marker = "o", alpha = 0.5)
-    plt.scatter(true_shape, prediction_holder, label = "= Predicted", color = "red", marker = "x", alpha = 0.5)
+    plt.scatter(true_shape, actual, label = "= Actual", color = "green", marker = "o", alpha = 0.7)
+    plt.scatter(true_shape, prediction_holder, label = "= Predicted", color = "red", marker = "x", alpha = 0.7)
     plt.xlabel("Data Test Samples", color = "blue")
     plt.ylabel("Output Values (0 - 9)", color = "blue")
     plt.title("Actual vs. Predicted Values\n MNIST - Multi-class Classification", color = "blue")
@@ -608,6 +671,9 @@ def cnn_scatter_plot(predicted, true):
     plt.savefig("[MNIST - Multi-class] Actual vs. Predicted values.png")
     plt.show()
 
+# Fetches the MNIST dataset from the OpenML website and saves/caches in a local copy afterward.
+# If a local copy is already cached in the same directory as the Neural Network source code, then it
+# loads the dataset from there and skips the initial fetch.
 def cached_mnist_784(file_path):
     if os.path.exists(file_path):
         with number_array.load(file_path) as loaded:
@@ -623,6 +689,8 @@ def cached_mnist_784(file_path):
         print(f"The dataset has been saved locally as {file_path}")
     return x_holder, y_holder
 
+# This method uses the CNN build of the Neural Network to do multi-class classification using the MNIST
+# dataset.
 def do_cnn():
     number_array.random.seed(6)
     case = 2
@@ -655,9 +723,10 @@ def do_cnn():
         print(f"Current loss in record {entry}: ", i)
     print("Experimental loss: ", experimental_cost)
     output_text(cost, experimental_cost, case)
-    plot_save_loss_curve_cnn(cost)
+    plot_save_loss_curve_cnn(cost, learning_rate, number_iterations, batch_size, upper_boundary)
     cnn_scatter_plot(experimental_test, y_test_subset)
 
+# To run the Neural Network program.
 def main():
     while True :
         input_holder = input("For Binary Classification enter 'b' or for Multi-class Classification enter 'm': ")
@@ -669,7 +738,7 @@ def main():
             print("Multi-class Classification:")
             input_container = input("For CNN enter 'c' or Feedforward enter 'f': ")
             if input_container.lower() == "c":
-                print("Suggested Parameters: learning_rate = 0.3, number_iterations = 30, batch_size = 64, upper_boundary = 0.000001")
+                print("Suggested Parameters: learning_rate = 0.33, number_iterations = 30, batch_size = 64, upper_boundary = 0.000001")
                 do_cnn()
             else:
                 print("Suggested Parameters: learning_rate = 0.4, hidden_layer_size = 4, upper_boundary = 0.000001, num_iterations = 5000")
