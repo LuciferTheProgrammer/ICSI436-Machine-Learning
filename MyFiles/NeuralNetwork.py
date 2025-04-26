@@ -158,7 +158,7 @@ def plot_save_binary_classification_iris_dataset(exp_forward_values, y_test_hold
     plt.scatter(range(y_test_holder.shape[1]), predicted_binary.flatten(), label = "= Predicted", color = "red", marker = "x")
     plt.xlabel("Data Test Samples", color = "blue")
     plt.ylabel("Output Values", color = "blue")
-    plt.title("Actual vs. Predicted Values\n Iris Dataset - Binary Classification", color = "blue")
+    plt.title(f"Actual vs. Predicted Values\n Iris Dataset - Binary Classification\n Accuracy: {accuracy:.4f}", color = "blue")
     plt.legend()
     plt.savefig("[Iris Dataset - Binary] Actual vs. Predicted values.png")
     plt.show()
@@ -308,7 +308,7 @@ def plot_save_multi_class_classification_iris_dataset(exp_forward_values, y_test
     plt.scatter(range(y_test_holder.shape[1]), predicted_class.flatten(), label = "= Predicted", color = "red", marker = "x")
     plt.xlabel("Data Test Samples", color = "blue")
     plt.ylabel("Output Values", color = "blue")
-    plt.title("Actual vs. Predicted Values\n Iris Dataset - Multi-class Classification", color = "blue")
+    plt.title(f"Actual vs. Predicted Values\n Iris Dataset - Multi-class Classification\n Accuracy: {accuracy:.4f}", color = "blue")
     plt.legend(loc='center', bbox_to_anchor = (0.5, .25))
     plt.savefig("[Iris Dataset - Multi-class] Actual vs. Predicted values.png")
     plt.show()
@@ -357,8 +357,8 @@ def multi_class_classification():
         plot_save_multi_class_classification_iris_dataset(experimental_forward_outputs, y_test)
 
 # Initializes the weights and biases of the layers of the Neural Network. The layers include 2
-# convolutional layers, a dense layer, and an output layer. Convolutional layer 1 has 32 neurons,
-# convolutional layer 2 has 64 neurons, dense layer has 128 neurons, and output layer has
+# convolutional layers, a dense layer, and an output layer. Convolutional Layer 1 has 32 neurons,
+# Convolutional Layer 2 has 64 neurons, Dense Layer has 128 neurons, and Output Layer has
 # 10 neurons. Uses He (Kaiming) Initialization for the weights and biases are initialized to 0.
 # Returns the layers' weights and their corresponding biases.
 def initialize_parameters_cnn(image, number_classes):
@@ -666,7 +666,7 @@ def cnn_scatter_plot(predicted, true):
     plt.scatter(true_shape, prediction_holder, label = "= Predicted", color = "red", marker = "x", alpha = 0.7)
     plt.xlabel("Data Test Samples", color = "blue")
     plt.ylabel("Output Values (0 - 9)", color = "blue")
-    plt.title("Actual vs. Predicted Values\n MNIST - Multi-class Classification", color = "blue")
+    plt.title(f"Actual vs. Predicted Values\n MNIST - Multi-class Classification\n Accuracy: {accuracy:.4f}", color = "blue")
     plt.legend()
     plt.savefig("[MNIST - Multi-class] Actual vs. Predicted values.png")
     plt.show()
@@ -732,7 +732,7 @@ def main():
         input_holder = input("For Binary Classification enter 'b' or for Multi-class Classification enter 'm': ")
         if input_holder.lower() == "b":
             print("Binary Classification:")
-            print("Suggested Parameters: learning_rate = 0.4, hidden_layer_size = 4, upper_boundary = 0.0001, num_iterations = 4500")
+            print("Suggested Parameters: learning_rate = 0.4, hidden_layer_size = 4, upper_boundary = 0.0001, num_iterations = 200")
             binary_classification()
         else:
             print("Multi-class Classification:")
