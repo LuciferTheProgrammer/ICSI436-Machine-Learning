@@ -741,7 +741,7 @@ def main():
                 print("Suggested Parameters: learning_rate = 0.33, number_iterations = 30, batch_size = 64, upper_boundary = 0.000001")
                 do_cnn()
             else:
-                print("Suggested Parameters: learning_rate = 0.4, hidden_layer_size = 4, upper_boundary = 0.000001, num_iterations = 5000")
+                print("Suggested Parameters: learning_rate = 0.01, hidden_layer_size = 4, upper_boundary = 0.000001, num_iterations = 5000")
                 multi_class_classification()
         string_input = input("Do you want to keep testing the model? (y/n): ")
         if string_input.lower() != "y" :
