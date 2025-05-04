@@ -1,10 +1,10 @@
-import numpy as number_array
-from sklearn.datasets import load_iris
-from sklearn.model_selection import train_test_split
-from sklearn.datasets import fetch_openml
-import matplotlib.pyplot as plt
-from numpy.lib.stride_tricks import sliding_window_view
-import os
+import numpy as number_array                        # Numerical computations/Basic data processing
+from sklearn.datasets import load_iris              # Loads Iris Dataset
+from sklearn.model_selection import train_test_split # Splits the Dataset for training and testing
+from sklearn.datasets import fetch_openml            # Fetches MNIST dataset from OpenML website (need internet connection)
+import matplotlib.pyplot as plt                      # For graphs
+from numpy.lib.stride_tricks import sliding_window_view # Basic data processing - used on CNN
+import os                                               # To check/save local copy of MNIST dataset in current directory
 
 # An activation function that handles multi-class classifications, outputting a probability
 # distribution where each entry corresponds to a probability for a specific class.
@@ -37,6 +37,7 @@ def sigmoid_function(x):
     return value
 
 # Initializing weights and biases for the layers of the neural network (binary classification).
+# Uses Xavier Initialization.
 def initialize_parameters(x, y, size_in_hidden):
     number_array.random.seed(8)
     input_layer_size = x.shape[0]
@@ -213,6 +214,7 @@ def count_num_classes(y):
     return size
 
 # Initializing weights and biases for the layers of the neural network (multi-class classification).
+# Uses Xavier Initialization.
 def initialize_parameters_multiclass_classification(x, number_of_classes, size_in_hidden):
     number_array.random.seed(8)
     input_layer_size = x.shape[0]
